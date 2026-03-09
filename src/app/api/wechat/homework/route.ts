@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // 作业关键词识别
 const HOMEWORK_KEYWORDS = ['作业', '练习', '背诵', '完成', '提交', '截止'];

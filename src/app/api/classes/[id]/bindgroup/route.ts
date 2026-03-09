@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // POST /api/classes/:id/bindgroup - 绑定微信群到班级
 export async function POST(

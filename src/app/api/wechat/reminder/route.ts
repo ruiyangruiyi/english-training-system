@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 // POST /api/wechat/reminder - 触发作业提醒
 export async function POST(request: Request) {
