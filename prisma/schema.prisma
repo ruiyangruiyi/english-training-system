@@ -1,10 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -46,7 +47,7 @@ model Attendance {
   classId   Int
   studentId Int
   date      DateTime
-  status    String   // present, leave, absent
+  status    String
   class     Class    @relation(fields: [classId], references: [id])
   student   Student  @relation(fields: [studentId], references: [id])
 }
@@ -55,9 +56,9 @@ model Payment {
   id            Int       @id @default(autoincrement())
   studentId     Int
   term          String
-  status        String    // joined, paid, unpaid, not_joined
+  status        String
   amount        Float?
-  paymentMethod String?   // wechat, alipay, bank
+  paymentMethod String?
   paidAt        DateTime?
   student       Student   @relation(fields: [studentId], references: [id])
 }
@@ -82,26 +83,24 @@ model HomeworkClass {
   @@unique([homeworkId, classId])
 }
 
-// 作业完成记录
 model HomeworkCompletion {
   id          Int       @id @default(autoincrement())
   homeworkId  Int       @map("homework_id")
-  wechatUserId String   @map("wechat_user_id") // 微信用户ID
-  wechatName  String?   @map("wechat_name") // 微信昵称
+  wechatUserId String   @map("wechat_user_id")
+  wechatName  String?   @map("wechat_name")
   completedAt DateTime  @default(now()) @map("completed_at")
   homework    Homework  @relation(fields: [homeworkId], references: [id])
 
   @@unique([homeworkId, wechatUserId])
 }
 
-// 对话会话状态（用于问答式建群等交互）
 model ChatSession {
   id            Int       @id @default(autoincrement())
-  userId        String    @unique @map("user_id") // 企业微信用户ID
-  sessionType   String    @map("session_type") // create_group, etc.
-  currentStep   String    @map("current_step") // 当前步骤
-  data          String    @default("{}") // JSON存储临时数据
+  userId        String    @unique @map("user_id")
+  sessionType   String    @map("session_type")
+  currentStep   String    @map("current_step")
+  data          String    @default("{}")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  expiresAt     DateTime  @map("expires_at") // 会话过期时间
+  expiresAt     DateTime  @map("expires_at")
 }

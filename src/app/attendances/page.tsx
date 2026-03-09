@@ -22,13 +22,6 @@ type Student = {
 };
 
 type AttendanceRecord = {
-  id: number;
-  studentId: number;
-  date: string;
-  status: 'present' | 'leave' | 'absent';
-};
-
-type AttendanceRecordInput = {
   studentId: number;
   status: 'present' | 'leave' | 'absent';
 };
@@ -41,7 +34,7 @@ export default function AttendancesPage() {
     return today.toISOString().split('T')[0];
   });
   const [students, setStudents] = useState<Student[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordInput[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -114,7 +107,7 @@ export default function AttendancesPage() {
       if (data.length > 0) {
         // 使用已有的考勤记录
         const records = students.map(student => {
-          const existing = data.find((att: AttendanceRecord) => att.studentId === student.id);
+          const existing = data.find((att: any) => att.studentId === student.id);
           return {
             studentId: student.id,
             status: existing ? existing.status : 'present',

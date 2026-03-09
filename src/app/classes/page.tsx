@@ -18,19 +18,10 @@ type ClassType = {
   name: string;
   grade: string;
   schedule: string;
-  teacherId?: number;
-  teacher?: { id: number; name: string };
   _count: {
     students: number;
   };
 };
-
-interface User {
-  id: number;
-  username: string;
-  name: string;
-  role: string;
-}
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -40,32 +31,15 @@ export default function ClassesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingClass, setEditingClass] = useState<ClassType | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    fetchClasses();
   }, []);
-
-  useEffect(() => {
-    if (user !== null) {
-      fetchClasses();
-    }
-  }, [user]);
 
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      const params = new URLSearchParams();
-      if (user) {
-        params.set('role', user.role);
-        if (user.role !== 'admin') {
-          params.set('teacherId', user.id.toString());
-        }
-      }
-      const response = await fetch(`/api/classes?${params}`);
+      const response = await fetch('/api/classes');
       if (!response.ok) throw new Error('获取班级列表失败');
       const data = await response.json();
       setClasses(data);

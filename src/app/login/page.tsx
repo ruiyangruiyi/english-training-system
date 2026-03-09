@@ -17,30 +17,15 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || '登录失败');
+    // 模拟登录，实际应调用API
+    setTimeout(() => {
+      if (username === 'admin' && password === 'admin123') {
+        router.push('/');
+      } else {
+        setError('用户名或密码错误');
       }
-
-      const user = await response.json();
-      // 存储用户信息到localStorage
-      localStorage.setItem('user', JSON.stringify(user));
-      // 跳转到首页
-      window.location.href = '/';
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '登录失败，请重试');
-    } finally {
       setIsLoading(false);
-    }
+    }, 800);
   };
 
   return (

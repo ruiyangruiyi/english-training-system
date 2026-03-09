@@ -1,168 +1,271 @@
-# 部署指南 - Vercel
+# 部署指南
 
-## 部署步骤
+## 快速部署到 Vercel
 
-### 1. 准备代码
-确保项目包含以下文件：
-- `package.json` - 包含所有依赖
-- `prisma/` - 数据库 schema 和迁移
-- `src/app/` - Next.js 应用代码
-- `.env.example` - 环境变量示例
+### 前置准备
 
-### 2. 推送到 GitHub
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin <your-github-repo-url>
-git push -u origin main
-```
+1. **Turso 数据库**
+   - 访问 https://turso.tech/ 注册账号
+   - 创建数据库并获取 URL 和 Auth Token
+   - 详见 [TURSO_SETUP.md](./TURSO_SETUP.md)
 
-### 3. Vercel 部署
-1. 访问 [vercel.com](https://vercel.com)
-2. 使用 GitHub 登录
-3. 点击 "New Project"
-4. 导入你的 GitHub 仓库
-5. 配置项目：
-   - **Framework Preset**: Next.js
-   - **Root Directory**: . (根目录)
-   - **Build Command**: `npm run build`
-   - **Output Directory**: .next
-   - **Install Command**: `npm install`
+2. **企业微信应用**
+   - 注册企业微信
+   - 创建自建应用
+   - 获取 Corp ID、Agent ID、Secret 等配置
 
-### 4. 环境变量配置
-在 Vercel 项目设置 > Environment Variables 添加：
-```
-DATABASE_URL=file:./data.db
-```
-或者使用 Vercel Postgres（推荐生产环境）
+### 部署步骤
 
-### 5. 构建配置
-在 `vercel.json` 或项目设置中添加：
-```json
-{
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "outputDirectory": ".next"
-}
-```
+#### 方式一：通过 Vercel Dashboard（推荐）
 
-### 6. 数据库配置（SQLite on Vercel）
-SQLite 在 Vercel 上需要特殊处理：
+1. **导入项目**
+   - 访问 https://vercel.com/new
+   - 选择 GitHub 仓库
+   - 点击 Import
 
-**选项 A：使用 Vercel Postgres（推荐）**
-1. 在 Vercel 控制台创建 Postgres 数据库
-2. 更新 `prisma/schema.prisma` 数据源：
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("POSTGRES_URL")
-   }
+2. **配置环境变量**
+   在 Environment Variables 中添加：
    ```
-3. 在环境变量中添加 `POSTGRES_URL`
-4. 在 `package.json` 的 build 脚本前添加：
-   ```json
-   "scripts": {
-     "vercel-build": "prisma generate && prisma migrate deploy && next build"
-   }
+   TURSO_DATABASE_URL=libsql://your-database.turso.io
+   TURSO_AUTH_TOKEN=your_auth_token
+   WECOM_CORP_ID=your_corp_id
+   WECOM_AGENT_ID=your_agent_id
+   WECOM_SECRET=your_secret
+   WECOM_TOKEN=your_token
+   WECOM_ENCODING_AES_KEY=your_encoding_aes_key
    ```
 
-**选项 B：使用 SQLite（开发/演示）**
-SQLite 在 Vercel 无服务器环境中有写入限制。可以：
-1. 使用只读模式
-2. 或使用云存储（如 S3）存储数据库文件
+3. **部署**
+   - 点击 Deploy
+   - 等待构建完成
 
-### 7. 部署脚本
-在 `package.json` 中添加：
-```json
-"scripts": {
-  "vercel-build": "prisma generate && prisma migrate deploy && next build",
-  "build": "next build",
-  "start": "next start",
-  "dev": "next dev"
-}
-```
+#### 方式二：通过 Vercel CLI
 
-## 测试部署
+1. **安装 Vercel CLI**
+   ```bash
+   npm install -g vercel
+   ```
 
-### 本地构建测试
+2. **登录**
+   ```bash
+   vercel login
+   ```
+
+3. **部署**
+   ```bash
+   vercel --prod
+   ```
+
+4. **添加环境变量**
+   ```bash
+   vercel env add TURSO_DATABASE_URL
+   vercel env add TURSO_AUTH_TOKEN
+   vercel env add WECOM_CORP_ID
+   vercel env add WECOM_AGENT_ID
+   vercel env add WECOM_SECRET
+   vercel env add WECOM_TOKEN
+   vercel env add WECOM_ENCODING_AES_KEY
+   ```
+
+### 初始化数据库
+
+部署完成后，需要初始化数据库：
+
+1. **推送 Schema**
+   ```bash
+   # 设置环境变量
+   export TURSO_DATABASE_URL="libsql://your-database.turso.io"
+   export TURSO_AUTH_TOKEN="your_auth_token"
+   
+   # 推送 Schema
+   npx prisma db push
+   ```
+
+2. **运行种子数据**
+   ```bash
+   npx prisma db seed
+   ```
+
+### 配置企业微信回调
+
+1. **获取部署 URL**
+   - 例如：`https://your-app.vercel.app`
+
+2. **配置回调 URL**
+   - 进入企业微信管理后台
+   - 应用管理 → 自建应用 → 接收消息
+   - 设置 URL：`https://your-app.vercel.app/api/wecom/callback`
+   - 设置 Token 和 EncodingAESKey
+
+3. **验证回调**
+   - 保存配置后，企业微信会发送验证请求
+   - 确保回调接口正常响应
+
+### 验证部署
+
+1. **访问应用**
+   ```
+   https://your-app.vercel.app
+   ```
+
+2. **登录测试**
+   - 用户名：`admin`
+   - 密码：`admin123`
+
+3. **测试企业微信**
+   - 在企业微信中向应用发送消息
+   - 发送"建群"测试对话式建群功能
+
+## 常见问题
+
+### 构建失败
+
+**问题**：Prisma generate 失败
+**解决**：
 ```bash
-# 1. 安装依赖
+# 清除缓存
+rm -rf node_modules/.prisma
 npm install
-
-# 2. 初始化数据库
-npx prisma migrate dev
-
-# 3. 构建
-npm run build
-
-# 4. 启动生产服务器
-npm start
 ```
 
-### 访问地址
-- 本地开发：http://localhost:3000
-- Vercel 部署：https://your-project.vercel.app
+### 数据库连接失败
 
-### 测试账号
-- 用户名: `admin`
-- 密码: `admin123`
+**问题**：Cannot connect to database
+**解决**：
+1. 检查 TURSO_DATABASE_URL 格式（必须以 `libsql://` 开头）
+2. 检查 TURSO_AUTH_TOKEN 是否正确
+3. 确认 Turso 数据库状态正常
 
-## 故障排除
+### 企业微信回调失败
 
-### 常见问题
+**问题**：回调验证失败
+**解决**：
+1. 检查回调 URL 是否正确
+2. 检查 Token 和 EncodingAESKey 配置
+3. 查看 Vercel 日志排查错误
 
-1. **构建失败：数据库连接错误**
-   - 确保环境变量 `DATABASE_URL` 正确设置
-   - 检查 Prisma schema 是否正确
+### 环境变量未生效
 
-2. **运行时错误：API 404**
-   - 检查 `src/app/api` 路由是否正确
-   - 确保没有 TypeScript 错误
+**问题**：部署后环境变量为空
+**解决**：
+1. 确认在 Vercel Dashboard 中正确添加了环境变量
+2. 重新部署项目
+3. 检查变量名是否拼写正确
 
-3. **数据库写入失败（SQLite on Vercel）**
-   - 考虑切换到 Vercel Postgres
-   - 或使用只读模式演示
+## 性能优化
 
-4. **静态资源加载失败**
-   - 检查 `next.config.js` 配置
-   - 确保图片资源路径正确
+### 启用边缘缓存
 
-### 监控和日志
-- Vercel 控制台查看部署日志
-- 使用 Vercel Analytics 监控性能
-- 检查 Function Logs for API 错误
+在 `next.config.js` 中配置：
 
-## 维护
+```javascript
+module.exports = {
+  experimental: {
+    serverActions: true,
+  },
+  headers: async () => [
+    {
+      source: '/api/:path*',
+      headers: [
+        { key: 'Cache-Control', value: 'public, max-age=60, stale-while-revalidate=120' },
+      ],
+    },
+  ],
+}
+```
 
-### 数据库迁移
+### 数据库连接池
+
+Turso 自动管理连接池，无需额外配置。
+
+### CDN 加速
+
+Vercel 自动使用全球 CDN，静态资源会自动缓存。
+
+## 监控和日志
+
+### Vercel 日志
+
+访问 Vercel Dashboard → 项目 → Logs 查看运行日志
+
+### Turso 监控
+
+访问 Turso Dashboard → 数据库 → Analytics 查看数据库性能
+
+### 错误追踪
+
+建议集成 Sentry：
+
 ```bash
-# 开发环境
-npx prisma migrate dev
-
-# 生产环境
-npx prisma migrate deploy
+npm install @sentry/nextjs
+npx @sentry/wizard@latest -i nextjs
 ```
 
-### 数据备份
+## 更新部署
+
+### 自动部署
+
+推送到 GitHub 主分支会自动触发部署：
+
 ```bash
-# 导出 SQLite 数据
-sqlite3 data.db .dump > backup.sql
-
-# 导入数据
-sqlite3 data.db < backup.sql
+git add .
+git commit -m "Update"
+git push origin main
 ```
 
-### 更新依赖
+### 手动部署
+
 ```bash
-npm update
-npx prisma generate
-npm run build
+vercel --prod
 ```
+
+### 回滚
+
+在 Vercel Dashboard 中选择之前的部署版本，点击 Promote to Production
+
+## 成本估算
+
+### Vercel
+- Hobby 计划：免费
+- Pro 计划：$20/月（团队使用）
+
+### Turso
+- 免费套餐：500 个数据库，9 GB 存储
+- 按量付费：超出后 $0.25/GB
+
+### 总计
+小型项目（<1000 用户）：**免费**
+中型项目（1000-10000 用户）：**$20-50/月**
+
+## 安全建议
+
+1. **定期更新依赖**
+   ```bash
+   npm audit
+   npm update
+   ```
+
+2. **启用 HTTPS**
+   Vercel 自动提供 SSL 证书
+
+3. **限制 API 访问**
+   添加 rate limiting 中间件
+
+4. **备份数据库**
+   定期导出 Turso 数据库：
+   ```bash
+   turso db shell english-training-system .dump > backup-$(date +%Y%m%d).sql
+   ```
+
+5. **环境变量安全**
+   - 不要在代码中硬编码敏感信息
+   - 使用 Vercel 环境变量管理
+   - 定期轮换 Token
 
 ## 支持
-- 开发团队：TWINSUN（张小欧、张小产、张小开、张小发、张小测）
-- 项目文档：https://github.com/your-org/english-training-system
-- 问题反馈：GitHub Issues
+
+遇到问题？
+- Vercel 文档：https://vercel.com/docs
+- Turso 文档：https://docs.turso.tech
+- Next.js 文档：https://nextjs.org/docs
+- Prisma 文档：https://www.prisma.io/docs

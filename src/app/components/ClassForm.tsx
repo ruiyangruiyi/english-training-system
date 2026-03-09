@@ -130,7 +130,7 @@ export default function ClassForm({ classData, onSuccess, onCancel }: ClassFormP
             placeholder="例如：周六 9:00-11:00"
           />
           <p className="mt-1 text-xs text-gray-500">
-            请输入具体的上课时间安排，如&quot;周一、周三 19:00-20:30&quot;
+            请输入具体的上课时间安排，如"周一、周三 19:00-20:30"
           </p>
         </div>
 

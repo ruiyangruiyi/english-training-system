@@ -459,7 +459,7 @@ export default function PaymentsPage() {
                       <select
                         value={payment.status}
                         onChange={(e) => handleUpdatePayment(payment.id, { 
-                          status: e.target.value as Payment['status'],
+                          status: e.target.value as any,
                           ...(e.target.value === 'paid' && !payment.amount ? { amount: 3000 } : {})
                         })}
                         className={`rounded-md border px-3 py-1 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
@@ -488,7 +488,7 @@ export default function PaymentsPage() {
                       <select
                         value={payment.paymentMethod || ''}
                         onChange={(e) => handleUpdatePayment(payment.id, { 
-                          paymentMethod: (e.target.value || null) as Payment['paymentMethod'] 
+                          paymentMethod: e.target.value || null as any 
                         })}
                         className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       >
@@ -602,7 +602,7 @@ export default function PaymentsPage() {
                       <div className="ml-3">
                         <h3 className="text-sm font-medium text-blue-800">注意</h3>
                         <div className="mt-2 text-sm text-blue-700">
-                          <p>创建后所有学生的初始状态为&quot;接龙参加&quot;。</p>
+                          <p>创建后所有学生的初始状态为"接龙参加"。</p>
                           <p>您可以在列表中修改状态、金额和收款方式。</p>
                         </div>
                       </div>

@@ -393,7 +393,7 @@ export default function HomeworksPage() {
                       {notificationText}
                     </pre>
                     <p className="mt-4 text-sm text-gray-500">
-                      点击&quot;生成文案并复制&quot;按钮将此文案复制到剪贴板，可直接发送给家长群。
+                      点击"生成文案并复制"按钮将此文案复制到剪贴板，可直接发送给家长群。
                     </p>
                   </div>
                 ) : (
