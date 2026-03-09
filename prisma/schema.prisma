@@ -24,9 +24,7 @@ model Class {
   wechatGroupId   String?   @map("wechat_group_id")
   wechatGroupName String?   @map("wechat_group_name")
   teacherId       Int?      @map("teacher_id")
-  botId           Int?      @map("bot_id")
   teacher         User?     @relation("TeacherClasses", fields: [teacherId], references: [id])
-  bot             Bot?      @relation(fields: [botId], references: [id])
   students        Student[]
   attendances     Attendance[]
   homeworkClasses HomeworkClass[]
@@ -81,17 +79,4 @@ model HomeworkClass {
   class      Class    @relation(fields: [classId], references: [id])
 
   @@unique([homeworkId, classId])
-}
-
-model Bot {
-  id            Int       @id @default(autoincrement())
-  wechatId      String    @unique @map("wechat_id")
-  name          String
-  status        String    @default("offline") // online, offline, banned
-  groupCount    Int       @default(0) @map("group_count")
-  maxGroups     Int       @default(50) @map("max_groups")
-  serverIp      String?   @map("server_ip")
-  lastHeartbeat DateTime? @map("last_heartbeat")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  classes       Class[]
 }
