@@ -500,3 +500,117 @@ GET /api/wechat/reminder
   ]
 }
 ```
+
+---
+
+## 机器人管理 API
+
+### 获取机器人列表
+```
+GET /api/bots
+```
+
+**响应：**
+```json
+[
+  {
+    "id": 1,
+    "wechatId": "wxid_bot001",
+    "name": "助教1号",
+    "status": "online",
+    "effectiveStatus": "online",
+    "groupCount": 5,
+    "maxGroups": 50,
+    "serverIp": "192.168.1.100",
+    "lastHeartbeat": "2026-03-09T14:00:00.000Z"
+  }
+]
+```
+
+### 添加机器人
+```
+POST /api/bots
+```
+
+**请求体：**
+```json
+{
+  "wechatId": "wxid_bot001",
+  "name": "助教1号",
+  "maxGroups": 50,
+  "serverIp": "192.168.1.100"
+}
+```
+
+### 更新机器人状态/心跳
+```
+PUT /api/bots/:id
+```
+
+**请求体：**
+```json
+{
+  "status": "online",
+  "heartbeat": true,
+  "serverIp": "192.168.1.100"
+}
+```
+
+### 绑定群到机器人
+```
+POST /api/bots/:id/bindgroup
+```
+
+**请求体：**
+```json
+{
+  "classId": 1
+}
+```
+
+### 解绑群
+```
+DELETE /api/bots/:id/bindgroup?classId=1
+```
+
+### 获取可用机器人（负载最低）
+```
+GET /api/bots/available
+```
+
+**响应：**
+```json
+{
+  "available": true,
+  "recommended": {
+    "id": 1,
+    "name": "助教1号",
+    "groupCount": 5,
+    "maxGroups": 50,
+    "availableSlots": 45
+  },
+  "bots": [...]
+}
+```
+
+### 自动分配群到最佳机器人
+```
+POST /api/bots/available
+```
+
+**请求体：**
+```json
+{
+  "classId": 1
+}
+```
+
+**响应：**
+```json
+{
+  "success": true,
+  "message": "已自动分配到机器人: 助教1号",
+  "class": {...},
+  "bot": {...}
+}
+```
