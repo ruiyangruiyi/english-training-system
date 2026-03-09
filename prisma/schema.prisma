@@ -15,12 +15,14 @@ model User {
 }
 
 model Class {
-  id        Int       @id @default(autoincrement())
-  name      String
-  grade     String
-  schedule  String
-  students  Student[]
-  attendances Attendance[]
+  id              Int       @id @default(autoincrement())
+  name            String
+  grade           String
+  schedule        String
+  wechatGroupId   String?   @map("wechat_group_id")
+  wechatGroupName String?   @map("wechat_group_name")
+  students        Student[]
+  attendances     Attendance[]
   homeworkClasses HomeworkClass[]
 }
 
