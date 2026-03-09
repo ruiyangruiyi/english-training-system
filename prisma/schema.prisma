@@ -80,3 +80,15 @@ model HomeworkClass {
 
   @@unique([homeworkId, classId])
 }
+
+// 对话会话状态（用于问答式建群等交互）
+model ChatSession {
+  id            Int       @id @default(autoincrement())
+  userId        String    @unique @map("user_id") // 企业微信用户ID
+  sessionType   String    @map("session_type") // create_group, etc.
+  currentStep   String    @map("current_step") // 当前步骤
+  data          String    @default("{}") // JSON存储临时数据
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  expiresAt     DateTime  @map("expires_at") // 会话过期时间
+}
