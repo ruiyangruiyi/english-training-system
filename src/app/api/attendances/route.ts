@@ -7,15 +7,27 @@ export async function GET(request: NextRequest) {
     const classId = searchParams.get('classId')
     const date = searchParams.get('date')
     const studentId = searchParams.get('studentId')
+    const teacherId = searchParams.get('teacherId')
+    const role = searchParams.get('role')
 
     const where: Record<string, unknown> = {}
     if (classId) where.classId = parseInt(classId)
     if (studentId) where.studentId = parseInt(studentId)
     if (date) where.date = new Date(date)
+    
+    // 老师只能看自己班级的考勤
+    if (role !== 'admin' && teacherId) {
+      where.class = { teacherId: parseInt(teacherId) }
+    }
 
     const attendances = await prisma.attendance.findMany({
       where,
-      include: { student: true, class: true },
+      include: { 
+        student: true, 
+        class: {
+          include: { teacher: { select: { id: true, name: true } } }
+        }
+      },
       orderBy: { date: 'desc' }
     })
 

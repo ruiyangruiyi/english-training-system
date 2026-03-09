@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   AcademicCapIcon,
@@ -37,6 +37,13 @@ ChartJS.register(
   Legend,
   ArcElement
 );
+
+interface User {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+}
 
 // 模拟数据
 const stats = [
@@ -104,6 +111,16 @@ const classDistributionData = {
 
 export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('week');
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const roleLabel = user?.role === 'admin' ? '管理员' : '老师';
 
   return (
     <div className="space-y-6">
@@ -112,7 +129,16 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">仪表板</h1>
           <p className="mt-1 text-sm text-gray-600">
-            欢迎回来！以下是系统最新数据概览。
+            欢迎回来，{user?.name || '用户'}！
+            {user?.role === 'admin' ? (
+              <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                {roleLabel} - 可查看所有数据
+              </span>
+            ) : (
+              <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                {roleLabel} - 仅显示您的班级数据
+              </span>
+            )}
           </p>
         </div>
         <div className="mt-4 sm:mt-0">

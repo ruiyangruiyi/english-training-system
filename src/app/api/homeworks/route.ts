@@ -5,13 +5,32 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const classId = searchParams.get('classId')
+    const teacherId = searchParams.get('teacherId')
+    const role = searchParams.get('role')
+
+    let where: any = undefined
+    
+    if (classId) {
+      where = { homeworkClasses: { some: { classId: parseInt(classId) } } }
+    } else if (role !== 'admin' && teacherId) {
+      // 老师只能看自己班级的作业
+      where = { 
+        homeworkClasses: { 
+          some: { class: { teacherId: parseInt(teacherId) } } 
+        } 
+      }
+    }
 
     const homeworks = await prisma.homework.findMany({
-      where: classId ? {
-        homeworkClasses: { some: { classId: parseInt(classId) } }
-      } : undefined,
+      where,
       include: {
-        homeworkClasses: { include: { class: true } }
+        homeworkClasses: { 
+          include: { 
+            class: {
+              include: { teacher: { select: { id: true, name: true } } }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     })

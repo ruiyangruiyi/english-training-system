@@ -6,22 +6,49 @@ async function main() {
   // 创建默认管理员
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: { role: 'admin' },
     create: {
       username: 'admin',
       password: 'admin123',
-      name: '管理员'
+      name: '管理员',
+      role: 'admin'
     }
   })
 
   console.log('Created admin user:', admin)
 
-  // 创建示例班级
+  // 创建示例老师
+  const teacher1 = await prisma.user.upsert({
+    where: { username: 'teacher1' },
+    update: {},
+    create: {
+      username: 'teacher1',
+      password: 'teacher123',
+      name: '王老师',
+      role: 'teacher'
+    }
+  })
+
+  const teacher2 = await prisma.user.upsert({
+    where: { username: 'teacher2' },
+    update: {},
+    create: {
+      username: 'teacher2',
+      password: 'teacher123',
+      name: '李老师',
+      role: 'teacher'
+    }
+  })
+
+  console.log('Created teachers:', teacher1, teacher2)
+
+  // 创建示例班级（关联老师）
   const class1 = await prisma.class.create({
     data: {
       name: '初级英语班',
       grade: '一年级',
-      schedule: '周六 9:00-11:00'
+      schedule: '周六 9:00-11:00',
+      teacherId: teacher1.id
     }
   })
 
@@ -29,7 +56,8 @@ async function main() {
     data: {
       name: '中级英语班',
       grade: '三年级',
-      schedule: '周六 14:00-16:00'
+      schedule: '周六 14:00-16:00',
+      teacherId: teacher2.id
     }
   })
 

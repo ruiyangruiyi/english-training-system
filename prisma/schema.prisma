@@ -8,10 +8,12 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
+  id       Int      @id @default(autoincrement())
+  username String   @unique
   password String
   name     String
+  role     String   @default("teacher") // admin, teacher
+  classes  Class[]  @relation("TeacherClasses")
 }
 
 model Class {
@@ -21,6 +23,8 @@ model Class {
   schedule        String
   wechatGroupId   String?   @map("wechat_group_id")
   wechatGroupName String?   @map("wechat_group_name")
+  teacherId       Int?      @map("teacher_id")
+  teacher         User?     @relation("TeacherClasses", fields: [teacherId], references: [id])
   students        Student[]
   attendances     Attendance[]
   homeworkClasses HomeworkClass[]

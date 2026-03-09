@@ -20,8 +20,16 @@ type Student = {
   class: {
     id: number;
     name: string;
+    teacher?: { id: number; name: string };
   };
 };
+
+interface User {
+  id: number;
+  username: string;
+  name: string;
+  role: string;
+}
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
@@ -31,27 +39,49 @@ export default function StudentsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [filterClassId, setFilterClassId] = useState<string>('');
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, [filterClassId]);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user !== null) {
+      fetchData();
+    }
+  }, [filterClassId, user]);
 
   const fetchData = async () => {
     try {
       setIsLoading(true);
       
       // 获取班级列表
-      const classesRes = await fetch('/api/classes');
+      const classParams = new URLSearchParams();
+      if (user) {
+        classParams.set('role', user.role);
+        if (user.role !== 'admin') {
+          classParams.set('teacherId', user.id.toString());
+        }
+      }
+      const classesRes = await fetch(`/api/classes?${classParams}`);
       if (!classesRes.ok) throw new Error('获取班级列表失败');
       const classesData = await classesRes.json();
       setClasses(classesData);
 
       // 获取学生列表
-      let url = '/api/students';
+      const studentParams = new URLSearchParams();
       if (filterClassId) {
-        url += `?classId=${filterClassId}`;
+        studentParams.set('classId', filterClassId);
+      } else if (user) {
+        studentParams.set('role', user.role);
+        if (user.role !== 'admin') {
+          studentParams.set('teacherId', user.id.toString());
+        }
       }
-      const studentsRes = await fetch(url);
+      const studentsRes = await fetch(`/api/students?${studentParams}`);
       if (!studentsRes.ok) throw new Error('获取学生列表失败');
       const studentsData = await studentsRes.json();
       setStudents(studentsData);

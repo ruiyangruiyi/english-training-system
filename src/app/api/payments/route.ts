@@ -7,15 +7,30 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('studentId')
     const term = searchParams.get('term')
     const status = searchParams.get('status')
+    const teacherId = searchParams.get('teacherId')
+    const role = searchParams.get('role')
 
     const where: Record<string, unknown> = {}
     if (studentId) where.studentId = parseInt(studentId)
     if (term) where.term = term
     if (status) where.status = status
+    
+    // 老师只能看自己班级学生的缴费
+    if (role !== 'admin' && teacherId) {
+      where.student = { class: { teacherId: parseInt(teacherId) } }
+    }
 
     const payments = await prisma.payment.findMany({
       where,
-      include: { student: { include: { class: true } } },
+      include: { 
+        student: { 
+          include: { 
+            class: {
+              include: { teacher: { select: { id: true, name: true } } }
+            }
+          }
+        }
+      },
       orderBy: { id: 'desc' }
     })
 

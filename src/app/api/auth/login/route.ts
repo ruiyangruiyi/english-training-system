@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       id: user.id,
       username: user.username,
-      name: user.name
+      name: user.name,
+      role: user.role
     })
   } catch (_error) {
     return NextResponse.json({ error: '登录失败' }, { status: 500 })
