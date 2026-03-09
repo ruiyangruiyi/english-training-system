@@ -1,0 +1,89 @@
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  // 创建默认管理员
+  const admin = await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
+      username: 'admin',
+      password: 'admin123',
+      name: '管理员'
+    }
+  })
+
+  console.log('Created admin user:', admin)
+
+  // 创建示例班级
+  const class1 = await prisma.class.create({
+    data: {
+      name: '初级英语班',
+      grade: '一年级',
+      schedule: '周六 9:00-11:00'
+    }
+  })
+
+  const class2 = await prisma.class.create({
+    data: {
+      name: '中级英语班',
+      grade: '三年级',
+      schedule: '周六 14:00-16:00'
+    }
+  })
+
+  console.log('Created classes:', class1, class2)
+
+  // 创建示例学生
+  const student1 = await prisma.student.create({
+    data: {
+      name: '张三',
+      grade: '一年级',
+      parentPhone: '13800138001',
+      classId: class1.id
+    }
+  })
+
+  const student2 = await prisma.student.create({
+    data: {
+      name: '李四',
+      grade: '一年级',
+      parentPhone: '13800138002',
+      classId: class1.id
+    }
+  })
+
+  const student3 = await prisma.student.create({
+    data: {
+      name: '王五',
+      grade: '三年级',
+      parentPhone: '13800138003',
+      classId: class2.id
+    }
+  })
+
+  console.log('Created students:', student1, student2, student3)
+
+  // 创建示例缴费记录
+  await prisma.payment.createMany({
+    data: [
+      { studentId: student1.id, term: '2026春季', status: 'paid', amount: 3000, paymentMethod: 'wechat', paidAt: new Date() },
+      { studentId: student2.id, term: '2026春季', status: 'unpaid', amount: 3000 },
+      { studentId: student3.id, term: '2026春季', status: 'joined', amount: 3000 }
+    ]
+  })
+
+  console.log('Created payment records')
+
+  console.log('Seed completed!')
+}
+
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })

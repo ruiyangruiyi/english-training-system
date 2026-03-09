@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
+  name     String
+}
+
+model Class {
+  id        Int       @id @default(autoincrement())
+  name      String
+  grade     String
+  schedule  String
+  students  Student[]
+  attendances Attendance[]
+  homeworkClasses HomeworkClass[]
+}
+
+model Student {
+  id          Int       @id @default(autoincrement())
+  name        String
+  grade       String
+  parentPhone String
+  classId     Int?
+  class       Class?    @relation(fields: [classId], references: [id])
+  attendances Attendance[]
+  payments    Payment[]
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  classId   Int
+  studentId Int
+  date      DateTime
+  status    String   // present, leave, absent
+  class     Class    @relation(fields: [classId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id])
+}
+
+model Payment {
+  id            Int       @id @default(autoincrement())
+  studentId     Int
+  term          String
+  status        String    // joined, paid, unpaid, not_joined
+  amount        Float?
+  paymentMethod String?   // wechat, alipay, bank
+  paidAt        DateTime?
+  student       Student   @relation(fields: [studentId], references: [id])
+}
+
+model Homework {
+  id        Int       @id @default(autoincrement())
+  title     String
+  content   String
+  dueDate   DateTime
+  createdAt DateTime  @default(now())
+  homeworkClasses HomeworkClass[]
+}
+
+model HomeworkClass {
+  id         Int      @id @default(autoincrement())
+  homeworkId Int
+  classId    Int
+  homework   Homework @relation(fields: [homeworkId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+
+  @@unique([homeworkId, classId])
+}
