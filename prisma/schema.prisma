@@ -63,12 +63,13 @@ model Payment {
 }
 
 model Homework {
-  id        Int       @id @default(autoincrement())
-  title     String
-  content   String
-  dueDate   DateTime
-  createdAt DateTime  @default(now())
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String
+  dueDate     DateTime
+  createdAt   DateTime  @default(now())
   homeworkClasses HomeworkClass[]
+  completions HomeworkCompletion[]
 }
 
 model HomeworkClass {
@@ -79,6 +80,18 @@ model HomeworkClass {
   class      Class    @relation(fields: [classId], references: [id])
 
   @@unique([homeworkId, classId])
+}
+
+// 作业完成记录
+model HomeworkCompletion {
+  id          Int       @id @default(autoincrement())
+  homeworkId  Int       @map("homework_id")
+  wechatUserId String   @map("wechat_user_id") // 微信用户ID
+  wechatName  String?   @map("wechat_name") // 微信昵称
+  completedAt DateTime  @default(now()) @map("completed_at")
+  homework    Homework  @relation(fields: [homeworkId], references: [id])
+
+  @@unique([homeworkId, wechatUserId])
 }
 
 // 对话会话状态（用于问答式建群等交互）
