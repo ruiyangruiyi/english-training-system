@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberDays, setRememberDays] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,15 +18,42 @@ export default function LoginPage() {
     setError('');
     setIsLoading(true);
 
-    // 模拟登录，实际应调用API
-    setTimeout(() => {
-      if (username === 'admin' && password === 'admin123') {
-        router.push('/');
-      } else {
-        setError('用户名或密码错误');
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, rememberDays }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '登录失败');
       }
+
+      const user = await response.json();
+      
+      // 检查用户状态
+      if (user.status === 'pending') {
+        setError('您的账号正在审核中，请等待管理员批准');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (user.status === 'disabled') {
+        setError('您的账号已被禁用，请联系管理员');
+        setIsLoading(false);
+        return;
+      }
+
+      // 存储用户信息到localStorage
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // 跳转到首页
+      window.location.href = '/';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '登录失败，请重试');
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -52,9 +79,7 @@ export default function LoginPage() {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="-space-y-px rounded-md shadow-sm">
             <div>
-              <label htmlFor="username" className="sr-only">
-                用户名
-              </label>
+              <label htmlFor="username" className="sr-only">用户名</label>
               <input
                 id="username"
                 name="username"
@@ -68,9 +93,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="relative">
-              <label htmlFor="password" className="sr-only">
-                密码
-              </label>
+              <label htmlFor="password" className="sr-only">密码</label>
               <input
                 id="password"
                 name="password"
@@ -86,13 +109,8 @@ export default function LoginPage() {
                 type="button"
                 className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? '隐藏密码' : '显示密码'}
               >
-                {showPassword ? (
-                  <EyeSlashIcon className="h-5 w-5" />
-                ) : (
-                  <EyeIcon className="h-5 w-5" />
-                )}
+                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
             </div>
           </div>
@@ -108,27 +126,40 @@ export default function LoginPage() {
           )}
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-900"
-              >
-                记住我
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="remember"
+                  value="0"
+                  checked={rememberDays === 0}
+                  onChange={() => setRememberDays(0)}
+                  className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                />
+                <span className="ml-2 text-sm text-gray-900">不记住</span>
               </label>
-            </div>
-            <div className="text-sm">
-              <a
-                href="#"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                忘记密码？
-              </a>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="remember"
+                  value="7"
+                  checked={rememberDays === 7}
+                  onChange={() => setRememberDays(7)}
+                  className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                />
+                <span className="ml-2 text-sm text-gray-900">7天</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="remember"
+                  value="30"
+                  checked={rememberDays === 30}
+                  onChange={() => setRememberDays(30)}
+                  className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                />
+                <span className="ml-2 text-sm text-gray-900">30天</span>
+              </label>
             </div>
           </div>
 
@@ -154,7 +185,6 @@ export default function LoginPage() {
         </form>
         <div className="text-center text-sm text-gray-500">
           <p>演示账号: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span></p>
-          <p className="mt-2">还没有账号？<Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">立即注册</Link></p>
         </div>
       </div>
     </div>
