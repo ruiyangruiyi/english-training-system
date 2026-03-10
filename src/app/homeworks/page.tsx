@@ -69,7 +69,20 @@ export default function HomeworksPage() {
       const response = await fetch(url);
       if (!response.ok) throw new Error('获取作业列表失败');
       const data = await response.json();
-      setHomeworks(data);
+      // 兼容后端返回 homeworkClasses 结构
+      const normalized = Array.isArray(data)
+        ? data.map((hw: any) => ({
+            id: hw.id,
+            title: hw.title,
+            content: hw.content,
+            dueDate: hw.dueDate,
+            createdAt: hw.createdAt,
+            classes: Array.isArray(hw.homeworkClasses)
+              ? hw.homeworkClasses.map((hc: any) => hc.class).filter(Boolean)
+              : Array.isArray(hw.classes) ? hw.classes : [],
+          }))
+        : [];
+      setHomeworks(normalized);
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取作业列表失败');
     } finally {
