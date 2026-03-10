@@ -24,6 +24,8 @@ type Homework = {
   dueDate: string;
   createdAt: string;
   classes: ClassType[];
+  source?: 'manual' | 'wechat';
+  originalMessage?: string;
 };
 
 export default function HomeworksPage() {
@@ -80,6 +82,8 @@ export default function HomeworksPage() {
             classes: Array.isArray(hw.homeworkClasses)
               ? hw.homeworkClasses.map((hc: any) => hc.class).filter(Boolean)
               : Array.isArray(hw.classes) ? hw.classes : [],
+            source: hw.source || 'manual',
+            originalMessage: hw.originalMessage,
           }))
         : [];
       setHomeworks(normalized);
@@ -511,7 +515,22 @@ export default function HomeworksPage() {
                         <div>
                           <span>创建时间：{new Date(homework.createdAt).toLocaleDateString('zh-CN')}</span>
                         </div>
+                        <div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            homework.source === 'wechat' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {homework.source === 'wechat' ? '微信同步' : '手动录入'}
+                          </span>
+                        </div>
                       </div>
+                      {homework.source === 'wechat' && homework.originalMessage && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                          <p className="text-xs text-gray-500 mb-1">原始消息：</p>
+                          <p className="text-sm text-gray-600">{homework.originalMessage}</p>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleDelete(homework.id)}
