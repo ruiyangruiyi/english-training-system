@@ -1,3 +1,6 @@
+// Ç¿ÖÆÊ¹ÓÃ Node.js ÔËĞĞÊ±
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
     const { studentId, term, status, amount } = await request.json()
 
     if (!studentId || !term || !status) {
-      return NextResponse.json({ error: 'å‚æ•°ä¸å®Œæ•´' }, { status: 400 })
+      return NextResponse.json({ error: 'å‚æ•°ä¸å®Œæ•? }, { status: 400 })
     }
 
     const payment = await prisma.payment.create({

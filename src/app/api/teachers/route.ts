@@ -1,3 +1,6 @@
+// ǿ��ʹ�� Node.js ����ʱ
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -47,7 +50,7 @@ export async function PUT(request: NextRequest) {
   try {
     const { id, name, password, phone, wechat, subject } = await request.json()
     if (!id || !name) {
-      return NextResponse.json({ error: '参数不完整' }, { status: 400 })
+      return NextResponse.json({ error: '参数不完�? }, { status: 400 })
     }
     const data: Record<string, string | null> = {
       name, phone: phone || null, wechat: wechat || null, subject: subject || null,
@@ -60,8 +63,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// 更新老师状态
-export async function PATCH(request: NextRequest) {
+// 更新老师状�?export async function PATCH(request: NextRequest) {
   try {
     const { id, status } = await request.json()
     if (!id || !status || !['pending', 'active', 'disabled'].includes(status)) {

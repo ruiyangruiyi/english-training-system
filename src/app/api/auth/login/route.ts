@@ -1,3 +1,6 @@
+// ǿ��ʹ�� Node.js ����ʱ
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { createToken, setSessionCookie } from '@/lib/auth'
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (user.status === 'disabled') {
-      return NextResponse.json({ error: '账号已被禁用，请联系管理员' }, { status: 403 })
+      return NextResponse.json({ error: '账号已被禁用，请联系管理�? }, { status: 403 })
     }
 
     const token = createToken(user.id, user.role)

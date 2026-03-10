@@ -1,3 +1,6 @@
+// Ç¿ÖÆÊ¹ÓÃ Node.js ÔËĞĞÊ±
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
     const { title, content, dueDate, classIds } = await request.json()
 
     if (!title || !content || !dueDate || !classIds || !Array.isArray(classIds)) {
-      return NextResponse.json({ error: 'å‚æ•°ä¸å®Œæ•´' }, { status: 400 })
+      return NextResponse.json({ error: 'å‚æ•°ä¸å®Œæ•? }, { status: 400 })
     }
 
     const homework = await prisma.homework.create({
