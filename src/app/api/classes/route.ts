@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+
+// 强制使用 Node.js 运行时
+export const runtime = 'nodejs'
+
+// 延迟导入prisma
+async function getPrisma() {
+  const { prisma } = await import('@/lib/prisma')
+  return prisma
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,7 +15,10 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get('teacherId')
     const role = searchParams.get('role')
 
-    // 构建查询条件
+    console.log('[API /classes] GET, role:', role, 'TURSO_URL exists:', !!process.env.TURSO_DATABASE_URL)
+
+    const prisma = await getPrisma()
+
     const where = role === 'admin' || !teacherId 
       ? {} 
       : { teacherId: parseInt(teacherId) }
@@ -19,9 +30,16 @@ export async function GET(request: NextRequest) {
         teacher: { select: { id: true, name: true } }
       }
     })
+
+    console.log('[API /classes] Found', classes.length, 'classes')
     return NextResponse.json(classes)
-  } catch (_error) {
-    return NextResponse.json({ error: '获取班级列表失败' }, { status: 500 })
+  } catch (error) {
+    console.error('[API /classes] Error:', error)
+    return NextResponse.json({ 
+      error: '获取班级列表失败', 
+      message: error instanceof Error ? error.message : String(error),
+      envCheck: { hasTursoUrl: !!process.env.TURSO_DATABASE_URL, hasTursoToken: !!process.env.TURSO_AUTH_TOKEN }
+    }, { status: 500 })
   }
 }
 
@@ -32,6 +50,8 @@ export async function POST(request: NextRequest) {
     if (!name || !grade || !schedule) {
       return NextResponse.json({ error: '班级名称、年级和课程安排不能为空' }, { status: 400 })
     }
+
+    const prisma = await getPrisma()
 
     const newClass = await prisma.class.create({
       data: { 
@@ -46,7 +66,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(newClass, { status: 201 })
-  } catch (_error) {
+  } catch (error) {
+    console.error('[API /classes] POST Error:', error)
     return NextResponse.json({ error: '创建班级失败' }, { status: 500 })
   }
 }
