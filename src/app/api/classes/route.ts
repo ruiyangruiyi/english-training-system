@@ -23,8 +23,9 @@ export async function GET(request: NextRequest) {
       }
     })
     return NextResponse.json(classes)
-  } catch (_error) {
-    return NextResponse.json({ error: '获取班级列表失败' }, { status: 500 })
+  } catch (error) {
+    console.error('获取班级列表失败:', error)
+    return NextResponse.json({ error: '获取班级列表失败', detail: String(error) }, { status: 500 })
   }
 }
 
