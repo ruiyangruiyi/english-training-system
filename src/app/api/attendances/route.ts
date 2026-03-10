@@ -13,7 +13,15 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {}
     if (classId) where.classId = parseInt(classId)
     if (studentId) where.studentId = parseInt(studentId)
-    if (date) where.date = new Date(date)
+    
+    // 按日期范围查询（当天 00:00 到 23:59:59）
+    if (date) {
+      const dayStart = new Date(date)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(date)
+      dayEnd.setHours(23, 59, 59, 999)
+      where.date = { gte: dayStart, lte: dayEnd }
+    }
     
     // 老师只能看自己班级的考勤
     if (role !== 'admin' && teacherId) {
@@ -46,17 +54,26 @@ export async function POST(request: NextRequest) {
     }
 
     // 删除当天该班级的旧记录
+    const dayStart = new Date(date)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(date)
+    dayEnd.setHours(23, 59, 59, 999)
+
     await prisma.attendance.deleteMany({
-      where: { classId, date: new Date(date) }
+      where: { 
+        classId, 
+        date: { gte: dayStart, lte: dayEnd }
+      }
     })
 
-    // 批量创建新记录
+    // 批量创建新记录（支持remark字段）
     const attendances = await prisma.attendance.createMany({
-      data: records.map((r: { studentId: number; status: string }) => ({
+      data: records.map((r: { studentId: number; status: string; remark?: string }) => ({
         classId,
         studentId: r.studentId,
         date: new Date(date),
-        status: r.status
+        status: r.status,
+        remark: (r.status === 'leave' || r.status === 'absent') ? (r.remark || null) : null
       }))
     })
 

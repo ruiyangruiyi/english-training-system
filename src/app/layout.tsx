@@ -6,8 +6,8 @@ import Navbar from "./components/Navbar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "英语培训班管理系统",
-  description: "英语培训班学生、班级、考勤、缴费、作业管理",
+  title: "教学管理系统",
+  description: "学生、班级、考勤、缴费、作业管理",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
         </main>
         <footer className="border-t border-gray-200 bg-white py-4">
           <div className="mx-auto max-w-7xl px-4 text-center text-sm text-gray-500">
-            © 2026 英语培训班管理系统. All rights reserved.
+            © 2026 教学管理系统. All rights reserved.
           </div>
         </footer>
       </body>

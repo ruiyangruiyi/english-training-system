@@ -3,46 +3,53 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  // 创建默认管理员
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: { role: 'admin' },
+    update: { role: 'admin', status: 'active' },
     create: {
       username: 'admin',
       password: 'admin123',
       name: '管理员',
-      role: 'admin'
+      role: 'admin',
+      status: 'active',
+      phone: '13800000000',
+      wechat: 'admin_wechat',
+      subject: '管理'
     }
   })
+  console.log('Created admin:', admin)
 
-  console.log('Created admin user:', admin)
-
-  // 创建示例老师
   const teacher1 = await prisma.user.upsert({
     where: { username: 'teacher1' },
-    update: {},
+    update: { status: 'active' },
     create: {
       username: 'teacher1',
       password: 'teacher123',
       name: '王老师',
-      role: 'teacher'
+      role: 'teacher',
+      status: 'active',
+      phone: '13800000001',
+      wechat: 'wang_laoshi',
+      subject: '英语'
     }
   })
 
   const teacher2 = await prisma.user.upsert({
     where: { username: 'teacher2' },
-    update: {},
+    update: { status: 'active' },
     create: {
       username: 'teacher2',
       password: 'teacher123',
       name: '李老师',
-      role: 'teacher'
+      role: 'teacher',
+      status: 'active',
+      phone: '13800000002',
+      wechat: 'li_laoshi',
+      subject: '数学'
     }
   })
-
   console.log('Created teachers:', teacher1, teacher2)
 
-  // 创建示例班级（关联老师）
   const class1 = await prisma.class.create({
     data: {
       name: '初级英语班',
@@ -60,40 +67,19 @@ async function main() {
       teacherId: teacher2.id
     }
   })
-
   console.log('Created classes:', class1, class2)
 
-  // 创建示例学生
   const student1 = await prisma.student.create({
-    data: {
-      name: '张三',
-      grade: '一年级',
-      parentPhone: '13800138001',
-      classId: class1.id
-    }
+    data: { name: '张三', grade: '一年级', parentPhone: '13800138001', classId: class1.id }
   })
-
   const student2 = await prisma.student.create({
-    data: {
-      name: '李四',
-      grade: '一年级',
-      parentPhone: '13800138002',
-      classId: class1.id
-    }
+    data: { name: '李四', grade: '一年级', parentPhone: '13800138002', classId: class1.id }
   })
-
   const student3 = await prisma.student.create({
-    data: {
-      name: '王五',
-      grade: '三年级',
-      parentPhone: '13800138003',
-      classId: class2.id
-    }
+    data: { name: '王五', grade: '三年级', parentPhone: '13800138003', classId: class2.id }
   })
-
   console.log('Created students:', student1, student2, student3)
 
-  // 创建示例缴费记录
   await prisma.payment.createMany({
     data: [
       { studentId: student1.id, term: '2026春季', status: 'paid', amount: 3000, paymentMethod: 'wechat', paidAt: new Date() },
@@ -101,17 +87,9 @@ async function main() {
       { studentId: student3.id, term: '2026春季', status: 'joined', amount: 3000 }
     ]
   })
-
-  console.log('Created payment records')
-
   console.log('Seed completed!')
 }
 
 main()
-  .catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
+  .catch((e) => { console.error(e); process.exit(1) })
+  .finally(async () => { await prisma.$disconnect() })

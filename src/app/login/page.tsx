@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function LoginPage() {
@@ -42,7 +43,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            英语培训班管理系统
+            教学管理系统
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             请输入您的账号密码登录
@@ -153,6 +154,7 @@ export default function LoginPage() {
         </form>
         <div className="text-center text-sm text-gray-500">
           <p>演示账号: <span className="font-mono">admin</span> / <span className="font-mono">admin123</span></p>
+          <p className="mt-2">还没有账号？<Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">立即注册</Link></p>
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ import {
   CreditCardIcon,
   DocumentTextIcon,
   ArrowRightOnRectangleIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -22,6 +23,7 @@ const navigation = [
   { name: '考勤记录', href: '/attendances', icon: CalendarIcon },
   { name: '缴费状态', href: '/payments', icon: CreditCardIcon },
   { name: '作业管理', href: '/homeworks', icon: DocumentTextIcon },
+  { name: '老师管理', href: '/teachers', icon: UsersIcon },
 ];
 
 export default function Navbar() {
@@ -43,7 +45,7 @@ export default function Navbar() {
               <div className="flex flex-shrink-0 items-center">
                 <AcademicCapIcon className="h-8 w-8 text-indigo-600" />
                 <span className="ml-2 text-xl font-bold text-gray-900">
-                  英语培训班管理系统
+                  教学管理系统
                 </span>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
