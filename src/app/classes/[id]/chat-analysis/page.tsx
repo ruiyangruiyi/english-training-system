@@ -119,7 +119,7 @@ export default function ChatAnalysisPage() {
             className={`px-3 py-1 text-sm rounded-full ${!selectedDate ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
             全部
           </button>
-          {[...new Set(summaries.map(s => s.date))].map(date => (
+          {Array.from(new Set(summaries.map(s => s.date))).map(date => (
             <button key={date} onClick={() => setSelectedDate(date)}
               className={`px-3 py-1 text-sm rounded-full ${selectedDate === date ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
               {formatDate(date).full}
