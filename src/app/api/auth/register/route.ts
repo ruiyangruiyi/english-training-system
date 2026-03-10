@@ -1,4 +1,3 @@
-// ǿ��ʹ�� Node.js ����ʱ
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -12,12 +11,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '用户名、密码和姓名不能为空' }, { status: 400 })
     }
 
-    // 检查用户名是否已存�?    const existing = await prisma.user.findUnique({ where: { username } })
+    const existing = await prisma.user.findUnique({ where: { username } })
     if (existing) {
       return NextResponse.json({ error: '用户名已存在' }, { status: 400 })
     }
 
-    // 创建用户，状态为待审�?    const user = await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         username,
         password,
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ id: user.id, message: '注册成功，请等待管理员审�? }, { status: 201 })
+    return NextResponse.json({ id: user.id, message: '注册成功，请等待管理员审核' }, { status: 201 })
   } catch (error) {
     console.error('注册失败:', error)
     return NextResponse.json({ error: '注册失败' }, { status: 500 })
