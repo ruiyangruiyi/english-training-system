@@ -52,6 +52,16 @@ export default function AttendancesPage() {
         if (user.role !== 'admin') params.set('teacherId', user.id.toString());
       }
       const res = await fetch(`/api/classes?${params}`);
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || `请求失败: ${res.status}`);
+        setClasses([]);
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setClasses(data);
@@ -67,6 +77,14 @@ export default function AttendancesPage() {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/students?classId=${selectedClassId}`);
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        setStudents([]);
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data)) {
         setStudents(data);
