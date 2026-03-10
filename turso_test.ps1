@@ -1,5 +1,5 @@
-$token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzMwNzM0MzQsImlkIjoiMDE5Y2QzNjgtYTIwMS03Y2Q2LTkyYWYtMGYwMjM4NTUzYmE0IiwicmlkIjoiMmEwZTg1OWQtMWI5Yy00YmVjLThiYWMtZDIzMzUyYThjZGMxIn0.zku419nHvMThdOCnM05pyh6mo47WMz7xso15pKLORdEL9mg4TVX3pRC21Wtv2BPV8RhC-t99CpK5Vrqo5A-uBw"
-$url = "https://english-training-ruiyangruiyi.aws-ap-northeast-1.turso.io/v2/pipeline"
+$token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzMxMTE4NDIsImlkIjoiMDE5Y2Q1YjMtMmUwMS03OWFiLWE5M2EtNDJkMTljNjJmZDg4IiwicmlkIjoiMWE0MGE2YjItZWU5NC00NmVlLWIzMzEtMTY5MjcxMWM5MGI0In0.yjEQh15oQhe3OvVLI0BBsvxRHwUDTeniYk-0wM0EER50NMesz7I4OBvk_H6jpL1G1GBBuCElZzXSEXizFl0tDg"
+$url = "https://english-training-1-ruiyangruiyi.aws-us-east-2.turso.io/v2/pipeline"
 
 $body = @{
   requests = @(
@@ -13,5 +13,4 @@ try {
   $result | ConvertTo-Json -Depth 10
 } catch {
   Write-Host "Error: $_"
-  Write-Host "Response: $($_.Exception.Response)"
 }
