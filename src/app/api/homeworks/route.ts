@@ -1,5 +1,3 @@
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -10,11 +8,12 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get('teacherId')
     const role = searchParams.get('role')
 
-    let where: Record<string, unknown> | undefined = undefined
+    let where: any = undefined
     
     if (classId) {
       where = { homeworkClasses: { some: { classId: parseInt(classId) } } }
     } else if (role !== 'admin' && teacherId) {
+      // 老师只能看自己班级的作业
       where = { 
         homeworkClasses: { 
           some: { class: { teacherId: parseInt(teacherId) } } 
@@ -37,8 +36,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(homeworks)
-  } catch (error) {
-    console.error('获取作业列表失败:', error)
+  } catch (_error) {
     return NextResponse.json({ error: '获取作业列表失败' }, { status: 500 })
   }
 }
@@ -64,8 +62,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(homework, { status: 201 })
-  } catch (error) {
-    console.error('创建作业失败:', error)
+  } catch (_error) {
     return NextResponse.json({ error: '创建作业失败' }, { status: 500 })
   }
 }

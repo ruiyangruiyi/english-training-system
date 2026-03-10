@@ -1,6 +1,3 @@
-// 强制使用 Node.js 运行时
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -17,7 +14,8 @@ export async function GET(request: NextRequest) {
     if (classId) where.classId = parseInt(classId)
     if (studentId) where.studentId = parseInt(studentId)
     
-    // 按日期范围查询（当天 00:00 �?23:59:59�?    if (date) {
+    // 按日期范围查询（当天 00:00 到 23:59:59）
+    if (date) {
       const dayStart = new Date(date)
       dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(date)
@@ -52,10 +50,11 @@ export async function POST(request: NextRequest) {
     const { classId, date, records } = await request.json()
 
     if (!classId || !date || !records || !Array.isArray(records)) {
-      return NextResponse.json({ error: '参数不完�? }, { status: 400 })
+      return NextResponse.json({ error: '参数不完整' }, { status: 400 })
     }
 
-    // 删除当天该班级的旧记�?    const dayStart = new Date(date)
+    // 删除当天该班级的旧记录
+    const dayStart = new Date(date)
     dayStart.setHours(0, 0, 0, 0)
     const dayEnd = new Date(date)
     dayEnd.setHours(23, 59, 59, 999)
@@ -67,7 +66,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // 批量创建新记录（支持remark字段�?    const attendances = await prisma.attendance.createMany({
+    // 批量创建新记录（支持remark字段）
+    const attendances = await prisma.attendance.createMany({
       data: records.map((r: { studentId: number; status: string; remark?: string }) => ({
         classId,
         studentId: r.studentId,

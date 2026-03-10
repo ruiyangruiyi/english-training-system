@@ -1,5 +1,3 @@
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
@@ -11,11 +9,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '用户名、密码和姓名不能为空' }, { status: 400 })
     }
 
+    // 检查用户名是否已存在
     const existing = await prisma.user.findUnique({ where: { username } })
     if (existing) {
       return NextResponse.json({ error: '用户名已存在' }, { status: 400 })
     }
 
+    // 创建用户，状态为待审核
     const user = await prisma.user.create({
       data: {
         username,

@@ -52,24 +52,9 @@ export default function AttendancesPage() {
         if (user.role !== 'admin') params.set('teacherId', user.id.toString());
       }
       const res = await fetch(`/api/classes?${params}`);
-      if (!res.ok) {
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        const errData = await res.json().catch(() => ({}));
-        setError(errData.error || `请求失败: ${res.status}`);
-        setClasses([]);
-        return;
-      }
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setClasses(data);
-        if (data.length > 0 && !selectedClassId) setSelectedClassId(data[0].id.toString());
-      } else {
-        setClasses([]);
-        setError(data.error || '获取班级列表失败');
-      }
+      setClasses(data);
+      if (data.length > 0 && !selectedClassId) setSelectedClassId(data[0].id.toString());
     } catch (err) { setError('获取班级列表失败'); }
   };
 
@@ -77,23 +62,11 @@ export default function AttendancesPage() {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/students?classId=${selectedClassId}`);
-      if (!res.ok) {
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return;
-        }
-        setStudents([]);
-        return;
-      }
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setStudents(data);
-        const initial = data.map((s: Student) => ({ studentId: s.id, status: 'present' as const, remark: '' }));
-        setAttendanceRecords(initial);
-        setSavedRecords(JSON.parse(JSON.stringify(initial)));
-      } else {
-        setStudents([]);
-      }
+      setStudents(data);
+      const initial = data.map((s: Student) => ({ studentId: s.id, status: 'present' as const, remark: '' }));
+      setAttendanceRecords(initial);
+      setSavedRecords(JSON.parse(JSON.stringify(initial)));
     } catch (err) { setError('获取学生列表失败'); }
     finally { setIsLoading(false); }
   };
@@ -102,7 +75,7 @@ export default function AttendancesPage() {
     try {
       const res = await fetch(`/api/attendances?classId=${selectedClassId}&date=${selectedDate}`);
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (data.length > 0) {
         const records = students.map(s => {
           const existing = data.find((a: any) => a.studentId === s.id);
           return { studentId: s.id, status: existing?.status || 'present', remark: existing?.remark || '' };

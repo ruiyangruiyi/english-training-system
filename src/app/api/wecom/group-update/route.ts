@@ -1,6 +1,3 @@
-// ǿ��ʹ�� Node.js ����ʱ
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
@@ -14,14 +11,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少群ID' }, { status: 400 });
     }
 
-    // 查找关联的班�?    const classItem = await prisma.class.findFirst({
+    // 查找关联的班级
+    const classItem = await prisma.class.findFirst({
       where: { wechatGroupId: chatId }
     });
 
     if (!classItem) {
       return NextResponse.json({ 
         success: false, 
-        message: '未找到关联班�? 
+        message: '未找到关联班级' 
       });
     }
 
@@ -39,7 +37,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: '班级名称已同步更�?,
+        message: '班级名称已同步更新',
         oldName: classItem.name,
         newName: newName
       });

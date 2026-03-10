@@ -1,6 +1,3 @@
-// 强制使用 Node.js 运行时
-export const runtime = 'nodejs'
-
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
