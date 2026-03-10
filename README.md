@@ -1,182 +1,176 @@
-# 英语培训班管理系统
+# 教学管理系统 v1.0.0
 
-## 项目概述
+一站式英语培训班管理解决方案，支持班级、学生、考勤、缴费、作业全流程管理，并集成企业微信客户群功能。
 
-一个用于管理英语培训班的 Web 应用，支持班级管理、学生管理、考勤记录、缴费管理、作业发布，并集成企业微信客户群功能。
+## ✨ 功能特性
 
-## 技术栈
+### 核心功能
+- 📚 **班级管理** - 创建、编辑、删除班级，支持多老师分配
+- 👨‍🎓 **学生管理** - 学生信息录入、班级分配、状态管理
+- ✅ **考勤管理** - 按日期记录考勤，支持出勤/请假/缺勤状态和备注
+- 💰 **缴费管理** - 学费记录、缴费状态跟踪
+- 📝 **作业管理** - 作业发布、班级分配、截止日期设置
+- 📊 **数据统计** - Dashboard 展示关键指标
 
-- **框架**: Next.js 14 (App Router)
-- **语言**: TypeScript
-- **样式**: Tailwind CSS
-- **数据库**: SQLite + Prisma 5
-- **集成**: 企业微信客户群 API
-- **部署**: Vercel
+### 企业微信集成（二期）
+- 🤖 **对话式建群** - 通过私聊快速创建班级群
+- 🔄 **名称双向同步** - 班级名与群名自动同步
+- 📢 **作业提醒** - 定时推送作业到家长群
+- 📈 **完成统计** - 自动统计作业完成情况
+- 🗂️ **群聊分析** - AI 生成每日群聊摘要
 
-## 核心功能
+### 多角色支持
+- 👑 **管理员** - 全局管理权限
+- 👨‍🏫 **老师** - 管理自己负责的班级
 
-### 一期功能 ✅
-- 班级管理（CRUD）
-- 学生管理（CRUD）
-- 考勤记录
-- 缴费管理
-- 作业发布与管理
-- Dashboard 数据统计
+## 🛠️ 技术栈
 
-### 二期功能 🚧
-- 多老师支持（角色权限）
-- 企业微信客户群集成
-- 对话式建群
-- 班级名称双向同步
-- 作业自动提醒
-- 作业完成统计
+| 类别 | 技术 |
+|------|------|
+| 框架 | Next.js 14 (App Router) |
+| 语言 | TypeScript |
+| 样式 | Tailwind CSS |
+| 数据库 | SQLite / Turso (LibSQL) |
+| ORM | Prisma 5 |
+| 部署 | Vercel |
+| 集成 | 企业微信 API |
 
-## 项目结构
+## 🚀 快速开始
 
-```
-english-training-system/
-├── prisma/
-│   ├── schema.prisma      # 数据库模型
-│   ├── seed.ts            # 种子数据
-│   └── migrations/        # 数据库迁移
-├── src/
-│   ├── app/
-│   │   ├── api/           # API 路由
-│   │   │   ├── auth/
-│   │   │   ├── classes/
-│   │   │   ├── students/
-│   │   │   ├── attendances/
-│   │   │   ├── payments/
-│   │   │   └── homeworks/
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   └── lib/
-│       └── prisma.ts      # Prisma Client 单例
-├── API.md                 # API 文档
-└── README.md
-```
+### 环境要求
+- Node.js 18+
+- npm 或 yarn
 
-## 快速开始
-
-### 1. 安装依赖
+### 本地开发
 
 ```bash
+# 1. 克隆仓库
+git clone https://github.com/ruiyangruiyi/english-training-system.git
+cd english-training-system
+
+# 2. 安装依赖
 npm install
-```
 
-### 2. 初始化数据库
-
-```bash
-npx prisma migrate dev
-```
-
-这会自动运行种子数据脚本，创建：
-- 管理员账号：`admin` / `admin123`
-- 2 个示例班级
-- 3 个示例学生
-- 3 条缴费记录
-
-### 3. 配置环境变量
-
-复制 `.env.example` 到 `.env` 并填写配置：
-
-```bash
+# 3. 配置环境变量
 cp .env.example .env
-```
+# 编辑 .env 填写配置
 
-必填配置：
-- `DATABASE_URL`: 数据库连接（默认 SQLite）
-- `WECOM_CORP_ID`: 企业微信企业ID
-- `WECOM_AGENT_ID`: 企业微信应用ID
-- `WECOM_SECRET`: 企业微信应用Secret
-- `WECOM_TOKEN`: 企业微信回调Token
-- `WECOM_ENCODING_AES_KEY`: 企业微信回调加密Key
+# 4. 初始化数据库
+npx prisma generate
+npx prisma db push
 
-### 4. 启动开发服务器
+# 5. 初始化测试数据
+npx tsx prisma/seed.ts
 
-```bash
+# 6. 启动开发服务器
 npm run dev
 ```
 
 访问 http://localhost:3000
 
-### 4. 构建生产版本
+### 测试账号
+| 角色 | 用户名 | 密码 |
+|------|--------|------|
+| 管理员 | admin | admin123 |
+| 老师1 | teacher1 | teacher123 |
+| 老师2 | teacher2 | teacher123 |
+
+## 📦 部署到 Vercel
+
+### 1. 创建 Turso 数据库
 
 ```bash
-npm run build
-npm start
+# 安装 Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# 登录
+turso auth login
+
+# 创建数据库
+turso db create english-training
+
+# 获取连接信息
+turso db show english-training --url
+turso db tokens create english-training
 ```
 
-## 数据库模型
+### 2. 部署到 Vercel
 
-### 7 张表
+1. Fork 本仓库到你的 GitHub
+2. 在 [Vercel](https://vercel.com) 导入项目
+3. 配置环境变量：
+   - `TURSO_DATABASE_URL` - Turso 数据库 URL
+   - `TURSO_AUTH_TOKEN` - Turso 认证 Token
+4. 点击 Deploy
 
-1. **users** - 用户（管理员）
-2. **classes** - 班级
-3. **students** - 学生
-4. **attendances** - 考勤记录
-5. **payments** - 缴费记录
-6. **homeworks** - 作业
-7. **homework_classes** - 作业与班级关联表
+### 3. 初始化生产数据库
 
-详见 `prisma/schema.prisma`
+```bash
+# 设置环境变量后执行
+npx tsx scripts/migrate-turso.ts
+npx tsx scripts/seed-turso.ts
+```
 
-## API 文档
+## 📖 API 文档
 
 详见 [API.md](./API.md)
 
-## 开发计划
+### 主要接口
 
-### 后端 API ✅ (已完成)
-- [x] 数据库设计
-- [x] Prisma Schema
-- [x] 所有 CRUD 接口
-- [x] 种子数据
-- [x] Build 通过
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | /api/auth/login | 用户登录 |
+| GET | /api/classes | 获取班级列表 |
+| GET | /api/students | 获取学生列表 |
+| GET/POST | /api/attendances | 考勤管理 |
+| GET/POST | /api/payments | 缴费管理 |
+| GET/POST | /api/homeworks | 作业管理 |
 
-### 前端页面 (进行中)
-- [ ] 登录页
-- [ ] 首页 Dashboard
-- [ ] 班级管理
-- [ ] 学生管理
-- [ ] 考勤记录
-- [ ] 缴费管理
-- [ ] 作业管理
+## 📁 项目结构
 
-### 测试 & 部署
-- [ ] 功能测试
-- [ ] Vercel 部署
+```
+├── prisma/
+│   ├── schema.prisma      # 数据库模型
+│   └── seed.ts            # 种子数据
+├── scripts/
+│   ├── migrate-turso.ts   # Turso 迁移脚本
+│   └── seed-turso.ts      # Turso 种子数据
+├── src/
+│   ├── app/
+│   │   ├── api/           # API 路由
+│   │   ├── attendances/   # 考勤页面
+│   │   ├── classes/       # 班级页面
+│   │   ├── homeworks/     # 作业页面
+│   │   ├── payments/      # 缴费页面
+│   │   ├── students/      # 学生页面
+│   │   └── login/         # 登录页面
+│   ├── components/        # 公共组件
+│   └── lib/
+│       ├── prisma.ts      # Prisma 客户端
+│       └── wecom.ts       # 企业微信 SDK
+└── vercel.json            # Vercel 配置
+```
 
-## 截止时间
+## 🔧 环境变量
 
-**2026-03-10 12:00** - MVP 交付
+| 变量名 | 必填 | 说明 |
+|--------|------|------|
+| TURSO_DATABASE_URL | ✅ | Turso 数据库 URL |
+| TURSO_AUTH_TOKEN | ✅ | Turso 认证 Token |
+| WECOM_CORP_ID | ❌ | 企业微信企业ID |
+| WECOM_AGENT_ID | ❌ | 企业微信应用ID |
+| WECOM_SECRET | ❌ | 企业微信应用Secret |
+| OPENAI_API_KEY | ❌ | OpenAI API Key（群聊分析用）|
 
-## 部署
+## 📄 License
 
-### 生产环境部署
+MIT License
 
-详见 [DEPLOYMENT.md](./DEPLOYMENT.md)
+## 👥 团队
 
-快速步骤：
-1. 创建 Turso 数据库（详见 [TURSO_SETUP.md](./TURSO_SETUP.md)）
-2. 在 Vercel 导入项目
-3. 配置环境变量
-4. 部署
+TWINSUN 团队出品
 
-### 环境变量
-
-生产环境需要配置：
-- `TURSO_DATABASE_URL` - Turso 数据库 URL
-- `TURSO_AUTH_TOKEN` - Turso 认证 Token
-- `WECOM_CORP_ID` - 企业微信企业ID
-- `WECOM_AGENT_ID` - 企业微信应用ID
-- `WECOM_SECRET` - 企业微信应用Secret
-- `WECOM_TOKEN` - 企业微信回调Token
-- `WECOM_ENCODING_AES_KEY` - 企业微信回调加密Key
-
-## 团队
-
-- **后端开发**: 张小发
-- **前端开发**: 张小开
-- **测试**: 张小测
-- **产品**: 张小产
+- 产品经理：张小产
+- 开发工程师：张小开、张小发
+- 测试工程师：张小测
+- CEO：张小欧
