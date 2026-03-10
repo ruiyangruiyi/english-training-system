@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createGroupChat, getWecomConfig } from '@/lib/wecom';
 
 // 建群流程步骤（极简版：只问班级名称）
 const STEPS = {
@@ -111,27 +112,41 @@ export async function POST(request: NextRequest) {
 }
 
 // 创建班级和企业微信群
-async function createClassAndGroup(className: string, oderId: string) {
-  // TODO: 调用企业微信API创建客户群
-  // 实际需要对接企业微信API
-  const mockGroupId = `ww_group_${Date.now()}`;
-  const mockQrcodeUrl = `https://work.weixin.qq.com/qrcode/${mockGroupId}`;
+async function createClassAndGroup(className: string, ownerId: string) {
+  const config = getWecomConfig();
+  let groupId: string;
+  let qrcodeUrl: string;
 
-  // 创建班级（年级和上课时间后续在管理系统补充）
+  if (config.corpId) {
+    // 真实模式：调用企业微信API
+    const result = await createGroupChat({
+      name: className,
+      owner: ownerId,
+      userlist: [ownerId], // 至少需要群主
+    });
+    groupId = result.chatid;
+    qrcodeUrl = `https://work.weixin.qq.com/wework_admin/frame#/customer/groupCode/${groupId}`;
+  } else {
+    // Mock模式
+    groupId = `mock_group_${Date.now()}`;
+    qrcodeUrl = `https://example.com/qrcode/${groupId}`;
+  }
+
+  // 创建班级
   const newClass = await prisma.class.create({
     data: {
       name: className,
-      grade: '',  // 待补充
-      schedule: '',  // 待补充
-      wechatGroupId: mockGroupId,
-      wechatGroupName: className  // 群名=班级名
+      grade: '',
+      schedule: '',
+      wechatGroupId: groupId,
+      wechatGroupName: className
     }
   });
 
   return {
     class: newClass,
-    wechatGroupId: mockGroupId,
-    qrcodeUrl: mockQrcodeUrl
+    wechatGroupId: groupId,
+    qrcodeUrl
   };
 }
 

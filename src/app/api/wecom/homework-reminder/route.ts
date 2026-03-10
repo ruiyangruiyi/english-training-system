@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAccessToken, WECOM_API_BASE } from '@/lib/wecom'
+import { getAccessToken, sendGroupMessage, getWecomConfig } from '@/lib/wecom'
+
+const WECOM_API_BASE = 'https://qyapi.weixin.qq.com/cgi-bin';
 
 // 发送作业提醒
 export async function POST(request: NextRequest) {

@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAccessToken, WECOM_API_BASE } from '@/lib/wecom'
+import { getAccessToken, verifyCallback } from '@/lib/wecom'
+
+const WECOM_API_BASE = 'https://qyapi.weixin.qq.com/cgi-bin'
 
 // 处理企业微信消息回调
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    // 解析消息
-    const { MsgType, FromUserName, Content, Event } = body
+    const { MsgType, FromUserName, Content, Event, ChatId, UserName } = body
 
-    // 文本消息
-    if (MsgType === 'text') {
+    // 群聊文本消息
+    if (MsgType === 'text' && ChatId) {
+      await saveGroupMessage(ChatId, FromUserName, UserName, Content)
+      await checkHomeworkMessage(ChatId, FromUserName, Content)
+      await checkCompletionMessage(ChatId, FromUserName, UserName, Content)
+    }
+
+    // 私聊文本消息 - 对话式建群
+    if (MsgType === 'text' && !ChatId) {
       return await handleTextMessage(FromUserName, Content)
     }
 
@@ -27,18 +34,131 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 处理文本消息
-async function handleTextMessage(userId: string, content: string) {
-  const trimmedContent = content.trim()
+// 存储群消息
+async function saveGroupMessage(chatId: string, userId: string, userName: string | null, content: string) {
+  try {
+    await prisma.chatMessage.create({
+      data: { chatId, userId, userName: userName || null, content, msgType: 'text' },
+    })
+  } catch (error) {
+    console.error('存储消息失败:', error)
+  }
+}
 
-  // 检查是否有进行中的会话
-  const session = await prisma.chatSession.findUnique({
-    where: { userId },
+// 检查作业相关消息 - 自动同步到系统
+async function checkHomeworkMessage(chatId: string, userId: string, content: string) {
+  const homeworkKeywords = ['作业', 'homework', '今日任务', '练习', '背诵', '【作业】', '[作业]', '📝', '📚']
+  const hasKeyword = homeworkKeywords.some(k => content.includes(k))
+  if (!hasKeyword || content.length < 10) return
+
+  const cls = await prisma.class.findFirst({ where: { wechatGroupId: chatId } })
+  if (!cls) return
+
+  // 解析作业标题（取前50字符或第一行）
+  const firstLine = content.split('\n')[0].slice(0, 50)
+  const title = firstLine.replace(/^[\[【]?作业[\]】]?[:：]?\s*/i, '') || '微信群作业'
+
+  const homework = await prisma.homework.create({
+    data: {
+      title,
+      content,
+      dueDate: parseDueDate(content),
+      source: 'wechat',
+      originalMessage: content,
+    },
   })
 
+  await prisma.homeworkClass.create({
+    data: { homeworkId: homework.id, classId: cls.id },
+  })
+
+  console.log(`[作业同步] 班级${cls.name}: ${title}`)
+}
+
+// 检查完成打卡消息
+async function checkCompletionMessage(chatId: string, userId: string, userName: string | null, content: string) {
+  const completionKeywords = ['已完成', '完成了', '做完了', 'done', '打卡', '交作业']
+  const hasKeyword = completionKeywords.some(k => content.toLowerCase().includes(k))
+  if (!hasKeyword) return
+
+  const cls = await prisma.class.findFirst({ where: { wechatGroupId: chatId } })
+  if (!cls) return
+
+  const latestHomework = await prisma.homeworkClass.findFirst({
+    where: { classId: cls.id },
+    orderBy: { homework: { dueDate: 'desc' } },
+    include: { homework: true },
+  })
+  if (!latestHomework) return
+
+  try {
+    await prisma.homeworkCompletion.create({
+      data: {
+        homeworkId: latestHomework.homeworkId,
+        wechatUserId: userId,
+        wechatName: userName,
+      },
+    })
+    console.log(`[完成打卡] ${userName || userId} 完成了 ${latestHomework.homework.title}`)
+  } catch (error) {
+    // 已打卡过
+  }
+}
+
+// 解析截止日期
+function parseDueDate(content: string): Date {
+  const now = new Date()
+  
+  // 匹配日期格式：3月15日、3/15、03-15
+  const dateMatch = content.match(/(\d{1,2})[月\/\-](\d{1,2})[日号]?/)
+  if (dateMatch) {
+    const month = parseInt(dateMatch[1]) - 1
+    const day = parseInt(dateMatch[2])
+    const d = new Date(now.getFullYear(), month, day, 18, 0, 0)
+    if (d < now) d.setFullYear(d.getFullYear() + 1)
+    return d
+  }
+
+  if (content.includes('今天') || content.includes('今晚')) {
+    const d = new Date(now)
+    d.setHours(22, 0, 0, 0)
+    return d
+  }
+  if (content.includes('明天')) {
+    const d = new Date(now)
+    d.setDate(d.getDate() + 1)
+    d.setHours(18, 0, 0, 0)
+    return d
+  }
+  if (content.includes('后天')) {
+    const d = new Date(now)
+    d.setDate(d.getDate() + 2)
+    d.setHours(18, 0, 0, 0)
+    return d
+  }
+  if (content.includes('周末') || content.includes('周日')) {
+    const d = new Date(now)
+    const daysUntilSunday = (7 - d.getDay()) % 7 || 7
+    d.setDate(d.getDate() + daysUntilSunday)
+    d.setHours(18, 0, 0, 0)
+    return d
+  }
+
+  // 默认明天18点
+  const d = new Date(now)
+  d.setDate(d.getDate() + 1)
+  d.setHours(18, 0, 0, 0)
+  return d
+}
+
+// 处理私聊文本消息 - 对话式建群
+async function handleTextMessage(userId: string, content: string) {
+  const trimmed = content.trim()
+
+  const session = await prisma.chatSession.findUnique({ where: { userId } })
+
   // 建群命令
-  if (trimmedContent === '建群' || trimmedContent === '创建群') {
-    // 创建新会话
+  if (['建群', '创建群', '新建班级'].includes(trimmed)) {
     await prisma.chatSession.upsert({
       where: { userId },
       create: {
@@ -46,7 +166,7 @@ async function handleTextMessage(userId: string, content: string) {
         sessionType: 'create_group',
         currentStep: 'ask_name',
         data: '{}',
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30分钟过期
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
       update: {
         sessionType: 'create_group',
@@ -55,121 +175,137 @@ async function handleTextMessage(userId: string, content: string) {
         expiresAt: new Date(Date.now() + 30 * 60 * 1000),
       },
     })
+    return sendTextMessage(userId, '🎓 开始创建班级群\n\n请输入班级名称（如：三年级英语A班）：')
+  }
 
-    return sendTextMessage(userId, '请输入班级名称：')
+  // 取消命令
+  if (['取消', '退出'].includes(trimmed) && session) {
+    await prisma.chatSession.delete({ where: { userId } })
+    return sendTextMessage(userId, '已取消操作。')
   }
 
   // 处理会话中的消息
   if (session && session.expiresAt > new Date()) {
-    if (session.sessionType === 'create_group' && session.currentStep === 'ask_name') {
-      return await handleCreateGroup(userId, trimmedContent)
+    const data = JSON.parse(session.data || '{}')
+
+    if (session.sessionType === 'create_group') {
+      switch (session.currentStep) {
+        case 'ask_name':
+          data.name = trimmed
+          await prisma.chatSession.update({
+            where: { userId },
+            data: { currentStep: 'ask_grade', data: JSON.stringify(data) },
+          })
+          return sendTextMessage(userId, `班级名称：${trimmed}\n\n请输入年级（如：三年级、初一）：`)
+
+        case 'ask_grade':
+          data.grade = trimmed
+          await prisma.chatSession.update({
+            where: { userId },
+            data: { currentStep: 'ask_schedule', data: JSON.stringify(data) },
+          })
+          return sendTextMessage(userId, `年级：${trimmed}\n\n请输入上课时间（如：周六上午9:00）：`)
+
+        case 'ask_schedule':
+          data.schedule = trimmed
+          await prisma.chatSession.update({
+            where: { userId },
+            data: { currentStep: 'confirm', data: JSON.stringify(data) },
+          })
+          return sendTextMessage(userId, 
+            `📋 请确认班级信息：\n\n` +
+            `班级名称：${data.name}\n` +
+            `年级：${data.grade}\n` +
+            `上课时间：${data.schedule}\n\n` +
+            `回复"确认"创建班级，回复"取消"放弃`)
+
+        case 'confirm':
+          if (['确认', '确定', 'ok', 'yes'].includes(trimmed.toLowerCase())) {
+            return await createGroupAndClass(userId, data)
+          } else {
+            await prisma.chatSession.delete({ where: { userId } })
+            return sendTextMessage(userId, '已取消创建。')
+          }
+      }
     }
   }
 
   // 默认回复
-  return sendTextMessage(userId, '你好！我是英语培训班助手。\n\n发送"建群"可以创建新的班级群。')
+  return sendTextMessage(userId, 
+    '👋 你好！我是教学管理助手。\n\n' +
+    '📌 可用命令：\n' +
+    '• 发送"建群"- 创建新的班级群\n' +
+    '• 发送"帮助"- 查看更多功能')
 }
 
-// 处理事件消息
-async function handleEvent(userId: string, event: string, body: any) {
-  // 群聊名称变更事件
-  if (event === 'change_external_chat' && body.ChangeType === 'update_name') {
-    const chatId = body.ChatId
-    const newName = body.UpdateDetail?.name
-
-    if (chatId && newName) {
-      // 更新数据库中的班级名称
-      await prisma.class.updateMany({
-        where: { wechatGroupId: chatId },
-        data: { name: newName, wechatGroupName: newName },
-      })
-    }
-  }
-
-  return NextResponse.json({ errcode: 0, errmsg: 'ok' })
-}
-
-// 处理建群流程
-async function handleCreateGroup(userId: string, className: string) {
+// 创建群聊和班级
+async function createGroupAndClass(userId: string, data: { name: string; grade: string; schedule: string }) {
   try {
-    // 获取用户信息（假设 userId 就是 teacherId）
-    // 实际应该通过企业微信 API 获取用户信息并匹配到系统用户
-    
-    // 创建班级
-    const newClass = await prisma.class.create({
-      data: {
-        name: className,
-        grade: '待补充',
-        schedule: '待补充',
-        teacherId: null, // 需要关联到实际老师
-      },
-    })
-
-    // 调用企业微信 API 创建群聊
     const accessToken = await getAccessToken()
-    
+
     // 1. 创建群聊
-    const createGroupUrl = `${WECOM_API_BASE}/appchat/create?access_token=${accessToken}`
-    const createGroupResponse = await fetch(createGroupUrl, {
+    const createUrl = `${WECOM_API_BASE}/appchat/create?access_token=${accessToken}`
+    const createRes = await fetch(createUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: className,
+        name: data.name,
         owner: userId,
         userlist: [userId],
       }),
     })
-    const createGroupData = await createGroupResponse.json()
+    const createData = await createRes.json()
 
-    if (createGroupData.errcode !== 0) {
-      throw new Error(`创建群聊失败: ${createGroupData.errmsg}`)
+    if (createData.errcode !== 0) {
+      throw new Error(createData.errmsg)
     }
 
-    const chatId = createGroupData.chatid
+    const chatId = createData.chatid
 
-    // 2. 配置加入群聊方式并获取二维码
-    const addJoinWayUrl = `${WECOM_API_BASE}/externalcontact/groupchat/add_join_way?access_token=${accessToken}`
-    const addJoinWayResponse = await fetch(addJoinWayUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        scene: 2, // 二维码
-        remark: `${className}入群二维码`,
-        auto_create_room: 1,
-        room_base_name: className,
-        chat_id_list: [chatId],
-      }),
-    })
-    const addJoinWayData = await addJoinWayResponse.json()
-
-    if (addJoinWayData.errcode !== 0) {
-      throw new Error(`获取二维码失败: ${addJoinWayData.errmsg}`)
-    }
-
-    const qrCodeUrl = addJoinWayData.config_id
-
-    // 更新班级信息
-    await prisma.class.update({
-      where: { id: newClass.id },
+    // 2. 创建班级记录
+    await prisma.class.create({
       data: {
+        name: data.name,
+        grade: data.grade,
+        schedule: data.schedule,
         wechatGroupId: chatId,
-        wechatGroupName: className,
+        wechatGroupName: data.name,
       },
     })
 
-    // 删除会话
+    // 3. 删除会话
     await prisma.chatSession.delete({ where: { userId } })
 
-    // 发送成功消息和二维码
-    return sendTextMessage(
-      userId,
-      `✅ 班级"${className}"创建成功！\n\n群ID: ${chatId}\n\n请在管理后台补充年级和上课时间信息。`
-    )
+    return sendTextMessage(userId,
+      `✅ 班级创建成功！\n\n` +
+      `📚 ${data.name}\n` +
+      `📅 ${data.grade} | ${data.schedule}\n` +
+      `🔗 群ID: ${chatId}\n\n` +
+      `请在管理后台查看详情。`)
   } catch (error) {
     console.error('创建群聊失败:', error)
     await prisma.chatSession.delete({ where: { userId } }).catch(() => {})
     return sendTextMessage(userId, `❌ 创建失败: ${error instanceof Error ? error.message : '未知错误'}`)
   }
+}
+
+// 处理事件消息 - 群名双向同步
+async function handleEvent(userId: string, event: string, body: any) {
+  // 群聊名称变更事件 - 同步到系统
+  if (event === 'change_external_chat' && body.ChangeType === 'update_name') {
+    const chatId = body.ChatId
+    const newName = body.UpdateDetail?.name
+
+    if (chatId && newName) {
+      await prisma.class.updateMany({
+        where: { wechatGroupId: chatId },
+        data: { name: newName, wechatGroupName: newName },
+      })
+      console.log(`[群名同步] 企微→系统: ${newName}`)
+    }
+  }
+
+  return NextResponse.json({ errcode: 0, errmsg: 'ok' })
 }
 
 // 发送文本消息
@@ -185,9 +321,7 @@ async function sendTextMessage(userId: string, content: string) {
         touser: userId,
         msgtype: 'text',
         agentid: process.env.WECOM_AGENT_ID,
-        text: {
-          content,
-        },
+        text: { content },
       }),
     })
 
@@ -201,13 +335,6 @@ async function sendTextMessage(userId: string, content: string) {
 // GET 请求用于验证 URL
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const signature = searchParams.get('msg_signature')
-  const timestamp = searchParams.get('timestamp')
-  const nonce = searchParams.get('nonce')
   const echostr = searchParams.get('echostr')
-
-  // TODO: 验证签名
-  // 这里需要实现企业微信的签名验证逻辑
-
   return new NextResponse(echostr)
 }
