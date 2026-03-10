@@ -39,7 +39,7 @@ export default function ClassesPage() {
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/classes');
+      const response = await fetch('/api/classes', { credentials: 'include' });
       if (!response.ok) throw new Error('获取班级列表失败');
       const data = await response.json();
       setClasses(data);
@@ -58,6 +58,7 @@ export default function ClassesPage() {
     try {
       const response = await fetch(`/api/classes/${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('删除失败');

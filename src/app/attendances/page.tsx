@@ -51,31 +51,40 @@ export default function AttendancesPage() {
         params.set('role', user.role);
         if (user.role !== 'admin') params.set('teacherId', user.id.toString());
       }
-      const res = await fetch(`/api/classes?${params}`);
+      const res = await fetch(`/api/classes?${params}`, { credentials: 'include' });
       const data = await res.json();
-      setClasses(data);
-      if (data.length > 0 && !selectedClassId) setSelectedClassId(data[0].id.toString());
+      if (Array.isArray(data)) {
+        setClasses(data);
+        if (data.length > 0 && !selectedClassId) setSelectedClassId(data[0].id.toString());
+      } else {
+        setClasses([]);
+        setError(data.error || '获取班级列表失败');
+      }
     } catch (err) { setError('获取班级列表失败'); }
   };
 
   const fetchClassStudents = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/students?classId=${selectedClassId}`);
+      const res = await fetch(`/api/students?classId=${selectedClassId}`, { credentials: 'include' });
       const data = await res.json();
-      setStudents(data);
-      const initial = data.map((s: Student) => ({ studentId: s.id, status: 'present' as const, remark: '' }));
-      setAttendanceRecords(initial);
-      setSavedRecords(JSON.parse(JSON.stringify(initial)));
+      if (Array.isArray(data)) {
+        setStudents(data);
+        const initial = data.map((s: Student) => ({ studentId: s.id, status: 'present' as const, remark: '' }));
+        setAttendanceRecords(initial);
+        setSavedRecords(JSON.parse(JSON.stringify(initial)));
+      } else {
+        setStudents([]);
+      }
     } catch (err) { setError('获取学生列表失败'); }
     finally { setIsLoading(false); }
   };
 
   const fetchAttendanceRecords = async () => {
     try {
-      const res = await fetch(`/api/attendances?classId=${selectedClassId}&date=${selectedDate}`);
+      const res = await fetch(`/api/attendances?classId=${selectedClassId}&date=${selectedDate}`, { credentials: 'include' });
       const data = await res.json();
-      if (data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         const records = students.map(s => {
           const existing = data.find((a: any) => a.studentId === s.id);
           return { studentId: s.id, status: existing?.status || 'present', remark: existing?.remark || '' };
@@ -120,6 +129,7 @@ export default function AttendancesPage() {
       const res = await fetch('/api/attendances', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ classId: parseInt(selectedClassId), date: selectedDate, records: attendanceRecords }),
       });
       if (!res.ok) throw new Error('保存失败');
