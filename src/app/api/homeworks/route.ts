@@ -1,4 +1,3 @@
-// ǿ��ʹ�� Node.js ����ʱ
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -11,12 +10,11 @@ export async function GET(request: NextRequest) {
     const teacherId = searchParams.get('teacherId')
     const role = searchParams.get('role')
 
-    let where: any = undefined
+    let where: Record<string, unknown> | undefined = undefined
     
     if (classId) {
       where = { homeworkClasses: { some: { classId: parseInt(classId) } } }
     } else if (role !== 'admin' && teacherId) {
-      // 老师只能看自己班级的作业
       where = { 
         homeworkClasses: { 
           some: { class: { teacherId: parseInt(teacherId) } } 
@@ -39,7 +37,8 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(homeworks)
-  } catch (_error) {
+  } catch (error) {
+    console.error('获取作业列表失败:', error)
     return NextResponse.json({ error: '获取作业列表失败' }, { status: 500 })
   }
 }
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
     const { title, content, dueDate, classIds } = await request.json()
 
     if (!title || !content || !dueDate || !classIds || !Array.isArray(classIds)) {
-      return NextResponse.json({ error: '参数不完�? }, { status: 400 })
+      return NextResponse.json({ error: '参数不完整' }, { status: 400 })
     }
 
     const homework = await prisma.homework.create({
@@ -65,7 +64,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json(homework, { status: 201 })
-  } catch (_error) {
+  } catch (error) {
+    console.error('创建作业失败:', error)
     return NextResponse.json({ error: '创建作业失败' }, { status: 500 })
   }
 }
