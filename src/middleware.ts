@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   '/api/auth/login', 
   '/api/auth/register',
   '/api/wecom/callback',  // 企业微信回调接口
+  '/api/wecom/message',   // 企业微信消息接口
   '/api/cron/',           // 定时任务接口
 ]
 
