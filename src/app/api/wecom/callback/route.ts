@@ -53,33 +53,46 @@ export async function GET(request: NextRequest) {
 
   // 尝试解密echostr
   try {
-    // 先尝试Base64解码，判断是否是加密数据
-    // 注意：echostr 可能包含 URL 安全字符，需要替换
+    // 检查 echostr 是否看起来像有效的 Base64 加密数据
+    // 企业微信的加密 echostr 通常很长（>100字符），且是有效的 Base64
+    const base64Regex = /^[A-Za-z0-9+/]+=*$/
+    const isValidBase64 = base64Regex.test(echostr) && echostr.length > 50
+    
+    console.log('[WeCom Callback] echostr长度:', echostr.length)
+    console.log('[WeCom Callback] 是否有效Base64格式:', isValidBase64)
+    
+    if (!isValidBase64) {
+      // 不是有效的加密数据，可能是明文测试
+      console.log('[WeCom Callback] 非加密数据，直接返回明文')
+      return new NextResponse(echostr, {
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+    
+    // 尝试 Base64 解码
     const normalizedEchostr = echostr.replace(/-/g, '+').replace(/_/g, '/')
     const testBuffer = Buffer.from(normalizedEchostr, 'base64')
     
-    console.log('[WeCom Callback] echostr原始长度:', echostr.length)
     console.log('[WeCom Callback] Base64解码后长度:', testBuffer.length)
     console.log('[WeCom Callback] 是否16的倍数:', testBuffer.length % 16 === 0)
     
     if (testBuffer.length > 0 && testBuffer.length % 16 === 0) {
-      // 可能是加密数据，尝试解密
+      // 是加密数据，尝试解密
       const decrypted = decryptEchoStr(normalizedEchostr)
       console.log('[WeCom Callback] 解密成功，返回:', decrypted)
       return new NextResponse(decrypted, {
         headers: { 'Content-Type': 'text/plain' }
       })
     } else {
-      // 长度不对，可能是明文或数据有问题
-      console.log('[WeCom Callback] 数据长度不是16的倍数，尝试直接返回')
+      // 长度不对，返回明文
+      console.log('[WeCom Callback] 数据长度不是16的倍数，返回明文')
       return new NextResponse(echostr, {
         headers: { 'Content-Type': 'text/plain' }
       })
     }
   } catch (error) {
-    // 解密失败，记录详细错误
+    // 解密失败，记录详细错误并返回 403
     console.error('[WeCom Callback] 解密失败:', error)
-    // 返回 403 而不是 500，让企业微信知道验证失败
     return new NextResponse('解密失败', { status: 403 })
   }
 }
