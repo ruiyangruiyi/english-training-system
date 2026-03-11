@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
   const msg_signature = searchParams.get('msg_signature') || ''
   const timestamp = searchParams.get('timestamp') || ''
   const nonce = searchParams.get('nonce') || ''
-  const echostr = searchParams.get('echostr') || ''
+  // echostr 可能被 URL 编码，需要解码
+  const echostrRaw = searchParams.get('echostr') || ''
+  const echostr = decodeURIComponent(echostrRaw)
 
   // 无参数时返回状态信息（用于手动检查）
   if (!msg_signature && !echostr) {
