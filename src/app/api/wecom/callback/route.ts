@@ -16,7 +16,23 @@ export async function GET(request: NextRequest) {
   const nonce = searchParams.get('nonce') || ''
   const echostr = searchParams.get('echostr') || ''
 
+  // 无参数时返回状态信息（用于手动检查）
+  if (!msg_signature && !echostr) {
+    return new NextResponse(JSON.stringify({
+      status: 'ready',
+      message: '企业微信回调接口已就绪',
+      config: {
+        hasToken: !!WECOM_TOKEN,
+        hasAesKey: !!WECOM_ENCODING_AES_KEY,
+        hasCorpId: !!WECOM_CORP_ID,
+      }
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
   console.log('[WeCom Callback] GET验证请求:', { msg_signature, timestamp, nonce, echostr: echostr.slice(0, 20) + '...' })
+  console.log('[WeCom Callback] Token配置:', WECOM_TOKEN ? '已配置' : '未配置')
 
   // 验证签名
   const signature = generateSignature(WECOM_TOKEN, timestamp, nonce, echostr)
