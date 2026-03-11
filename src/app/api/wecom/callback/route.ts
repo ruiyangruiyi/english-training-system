@@ -25,22 +25,45 @@ export async function GET(request: NextRequest) {
         hasToken: !!WECOM_TOKEN,
         hasAesKey: !!WECOM_ENCODING_AES_KEY,
         hasCorpId: !!WECOM_CORP_ID,
+        tokenLen: WECOM_TOKEN.length,
+        aesKeyLen: WECOM_ENCODING_AES_KEY.length,
       }
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
   }
 
-  console.log('[WeCom Callback] GET验证请求:', { msg_signature, timestamp, nonce, echostr: echostr.slice(0, 20) + '...' })
-  console.log('[WeCom Callback] Token配置:', WECOM_TOKEN ? '已配置' : '未配置')
+  console.log('[WeCom Callback] GET验证请求')
+  console.log('[WeCom Callback] msg_signature:', msg_signature)
+  console.log('[WeCom Callback] timestamp:', timestamp)
+  console.log('[WeCom Callback] nonce:', nonce)
+  console.log('[WeCom Callback] echostr:', echostr.slice(0, 50))
+  console.log('[WeCom Callback] Token:', WECOM_TOKEN)
 
-  // 验证签名
-  const signature = generateSignature(WECOM_TOKEN, timestamp, nonce, echostr)
-  console.log('[WeCom Callback] 计算签名:', signature, '期望签名:', msg_signature)
+  // 验证签名 - 使用 token, timestamp, nonce, echostr 四个参数
+  const arr = [WECOM_TOKEN, timestamp, nonce, echostr].sort()
+  const str = arr.join('')
+  const signature = createHash('sha1').update(str).digest('hex')
+  
+  console.log('[WeCom Callback] 排序后数组:', arr)
+  console.log('[WeCom Callback] 拼接字符串长度:', str.length)
+  console.log('[WeCom Callback] 计算签名:', signature)
+  console.log('[WeCom Callback] 期望签名:', msg_signature)
+  console.log('[WeCom Callback] 签名匹配:', signature === msg_signature)
 
   if (signature !== msg_signature) {
     console.error('[WeCom Callback] 签名验证失败')
-    return new NextResponse('签名验证失败', { status: 403 })
+    return new NextResponse(JSON.stringify({
+      error: '签名验证失败',
+      debug: {
+        calculated: signature,
+        expected: msg_signature,
+        tokenUsed: WECOM_TOKEN,
+      }
+    }), { 
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 
   // 解密echostr
@@ -52,7 +75,13 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('[WeCom Callback] 解密失败:', error)
-    return new NextResponse('解密失败', { status: 500 })
+    return new NextResponse(JSON.stringify({
+      error: '解密失败',
+      message: error instanceof Error ? error.message : String(error)
+    }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 }
 
