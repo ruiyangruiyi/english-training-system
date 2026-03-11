@@ -51,30 +51,36 @@ export async function GET(request: NextRequest) {
     return new NextResponse('签名验证失败', { status: 403 })
   }
 
-  // 尝试解密echostr，如果失败则直接返回明文
+  // 尝试解密echostr
   try {
     // 先尝试Base64解码，判断是否是加密数据
-    const testBuffer = Buffer.from(echostr, 'base64')
+    // 注意：echostr 可能包含 URL 安全字符，需要替换
+    const normalizedEchostr = echostr.replace(/-/g, '+').replace(/_/g, '/')
+    const testBuffer = Buffer.from(normalizedEchostr, 'base64')
+    
+    console.log('[WeCom Callback] echostr原始长度:', echostr.length)
+    console.log('[WeCom Callback] Base64解码后长度:', testBuffer.length)
+    console.log('[WeCom Callback] 是否16的倍数:', testBuffer.length % 16 === 0)
+    
     if (testBuffer.length > 0 && testBuffer.length % 16 === 0) {
       // 可能是加密数据，尝试解密
-      const decrypted = decryptEchoStr(echostr)
+      const decrypted = decryptEchoStr(normalizedEchostr)
       console.log('[WeCom Callback] 解密成功，返回:', decrypted)
       return new NextResponse(decrypted, {
         headers: { 'Content-Type': 'text/plain' }
       })
     } else {
-      // 明文模式，直接返回
-      console.log('[WeCom Callback] 明文模式，直接返回:', echostr)
+      // 长度不对，可能是明文或数据有问题
+      console.log('[WeCom Callback] 数据长度不是16的倍数，尝试直接返回')
       return new NextResponse(echostr, {
         headers: { 'Content-Type': 'text/plain' }
       })
     }
   } catch (error) {
-    // 解密失败，尝试直接返回明文
-    console.log('[WeCom Callback] 解密失败，尝试明文模式:', error)
-    return new NextResponse(echostr, {
-      headers: { 'Content-Type': 'text/plain' }
-    })
+    // 解密失败，记录详细错误
+    console.error('[WeCom Callback] 解密失败:', error)
+    // 返回 403 而不是 500，让企业微信知道验证失败
+    return new NextResponse('解密失败', { status: 403 })
   }
 }
 
@@ -140,8 +146,10 @@ function decryptEchoStr(echostr: string): string {
   // IV = AESKey前16字节
   const iv = aesKey.slice(0, 16)
 
-  // Base64解码密文
+  // Base64解码密文（echostr 已经在调用前标准化过了）
   const encryptedBuffer = Buffer.from(echostr, 'base64')
+  
+  console.log('[WeCom Callback] 加密数据长度:', encryptedBuffer.length)
 
   // AES-256-CBC解密
   const decipher = createDecipheriv('aes-256-cbc', aesKey, iv)
