@@ -37,51 +37,29 @@ export async function GET(request: NextRequest) {
   console.log('[WeCom Callback] msg_signature:', msg_signature)
   console.log('[WeCom Callback] timestamp:', timestamp)
   console.log('[WeCom Callback] nonce:', nonce)
-  console.log('[WeCom Callback] echostr:', echostr.slice(0, 50))
-  console.log('[WeCom Callback] Token:', WECOM_TOKEN)
+  console.log('[WeCom Callback] echostr长度:', echostr.length)
 
   // 验证签名 - 使用 token, timestamp, nonce, echostr 四个参数
-  const arr = [WECOM_TOKEN, timestamp, nonce, echostr].sort()
-  const str = arr.join('')
-  const signature = createHash('sha1').update(str).digest('hex')
+  const signature = generateSignature(WECOM_TOKEN, timestamp, nonce, echostr)
   
-  console.log('[WeCom Callback] 排序后数组:', arr)
-  console.log('[WeCom Callback] 拼接字符串长度:', str.length)
   console.log('[WeCom Callback] 计算签名:', signature)
   console.log('[WeCom Callback] 期望签名:', msg_signature)
-  console.log('[WeCom Callback] 签名匹配:', signature === msg_signature)
 
   if (signature !== msg_signature) {
     console.error('[WeCom Callback] 签名验证失败')
-    return new NextResponse(JSON.stringify({
-      error: '签名验证失败',
-      debug: {
-        calculated: signature,
-        expected: msg_signature,
-        tokenUsed: WECOM_TOKEN,
-      }
-    }), { 
-      status: 403,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return new NextResponse('签名验证失败', { status: 403 })
   }
 
-  // 解密echostr
+  // 解密echostr并返回
   try {
-    const decrypted = decryptMessage(echostr)
+    const decrypted = decryptEchoStr(echostr)
     console.log('[WeCom Callback] 解密成功，返回:', decrypted)
     return new NextResponse(decrypted, {
       headers: { 'Content-Type': 'text/plain' }
     })
   } catch (error) {
     console.error('[WeCom Callback] 解密失败:', error)
-    return new NextResponse(JSON.stringify({
-      error: '解密失败',
-      message: error instanceof Error ? error.message : String(error)
-    }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return new NextResponse('解密失败: ' + (error instanceof Error ? error.message : String(error)), { status: 500 })
   }
 }
 
@@ -117,7 +95,6 @@ export async function POST(request: NextRequest) {
     console.log('[WeCom Callback] 解密消息:', decrypted.slice(0, 200))
 
     // TODO: 处理解密后的消息
-    // 这里可以解析XML并处理具体业务逻辑
 
     return NextResponse.json({ errcode: 0, errmsg: 'ok' })
   } catch (error) {
@@ -133,38 +110,56 @@ function generateSignature(token: string, timestamp: string, nonce: string, encr
   return createHash('sha1').update(str).digest('hex')
 }
 
-// 解密消息
-function decryptMessage(encrypt: string): string {
+// 解密echostr（URL验证用）
+function decryptEchoStr(echostr: string): string {
   if (!WECOM_ENCODING_AES_KEY) {
     throw new Error('WECOM_ENCODING_AES_KEY未配置')
   }
 
-  // AESKey = Base64_Decode(EncodingAESKey + "=")
+  // AESKey = Base64_Decode(EncodingAESKey + "=")，长度应为32字节
   const aesKey = Buffer.from(WECOM_ENCODING_AES_KEY + '=', 'base64')
+  if (aesKey.length !== 32) {
+    throw new Error(`AESKey长度错误: ${aesKey.length}，应为32`)
+  }
   
   // IV = AESKey前16字节
   const iv = aesKey.slice(0, 16)
 
-  // 解密
+  // Base64解码密文
+  const encryptedBuffer = Buffer.from(echostr, 'base64')
+
+  // AES-256-CBC解密
   const decipher = createDecipheriv('aes-256-cbc', aesKey, iv)
   decipher.setAutoPadding(false)
 
-  const encryptedBuffer = Buffer.from(encrypt, 'base64')
   let decrypted = Buffer.concat([decipher.update(encryptedBuffer), decipher.final()])
 
   // 去除PKCS7填充
   const pad = decrypted[decrypted.length - 1]
+  if (pad < 1 || pad > 32) {
+    throw new Error(`无效的PKCS7填充: ${pad}`)
+  }
   decrypted = decrypted.slice(0, decrypted.length - pad)
 
-  // 解析内容：random(16) + msg_len(4) + msg + receiveid
+  // 解析内容格式：random(16字节) + msg_len(4字节,网络字节序) + msg + receiveid
+  if (decrypted.length < 20) {
+    throw new Error(`解密后数据太短: ${decrypted.length}`)
+  }
+  
   const msgLen = decrypted.readUInt32BE(16)
+  if (20 + msgLen > decrypted.length) {
+    throw new Error(`消息长度错误: msgLen=${msgLen}, total=${decrypted.length}`)
+  }
+  
   const msg = decrypted.slice(20, 20 + msgLen).toString('utf8')
   const receiveid = decrypted.slice(20 + msgLen).toString('utf8')
 
-  // 验证receiveid
-  if (receiveid !== WECOM_CORP_ID) {
-    console.warn('[WeCom Callback] CorpID不匹配:', receiveid, '期望:', WECOM_CORP_ID)
-  }
+  console.log('[WeCom Callback] receiveid:', receiveid, '期望:', WECOM_CORP_ID)
 
   return msg
+}
+
+// 解密消息（POST消息用）
+function decryptMessage(encrypt: string): string {
+  return decryptEchoStr(encrypt)
 }
