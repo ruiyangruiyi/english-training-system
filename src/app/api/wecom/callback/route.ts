@@ -50,16 +50,30 @@ export async function GET(request: NextRequest) {
     return new NextResponse('签名验证失败', { status: 403 })
   }
 
-  // 解密echostr并返回
+  // 尝试解密echostr，如果失败则直接返回明文
   try {
-    const decrypted = decryptEchoStr(echostr)
-    console.log('[WeCom Callback] 解密成功，返回:', decrypted)
-    return new NextResponse(decrypted, {
+    // 先尝试Base64解码，判断是否是加密数据
+    const testBuffer = Buffer.from(echostr, 'base64')
+    if (testBuffer.length > 0 && testBuffer.length % 16 === 0) {
+      // 可能是加密数据，尝试解密
+      const decrypted = decryptEchoStr(echostr)
+      console.log('[WeCom Callback] 解密成功，返回:', decrypted)
+      return new NextResponse(decrypted, {
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    } else {
+      // 明文模式，直接返回
+      console.log('[WeCom Callback] 明文模式，直接返回:', echostr)
+      return new NextResponse(echostr, {
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+  } catch (error) {
+    // 解密失败，尝试直接返回明文
+    console.log('[WeCom Callback] 解密失败，尝试明文模式:', error)
+    return new NextResponse(echostr, {
       headers: { 'Content-Type': 'text/plain' }
     })
-  } catch (error) {
-    console.error('[WeCom Callback] 解密失败:', error)
-    return new NextResponse('解密失败: ' + (error instanceof Error ? error.message : String(error)), { status: 500 })
   }
 }
 
