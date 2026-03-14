@@ -477,9 +477,10 @@ export default function HomeworksPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {homeworks.map((homework) => (
-                <div
+                <Link
+                  href={`/homeworks/${homework.id}`}
                   key={homework.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+                  className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -533,14 +534,17 @@ export default function HomeworksPage() {
                       )}
                     </div>
                     <button
-                      onClick={() => handleDelete(homework.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDelete(homework.id);
+                      }}
                       className="ml-4 rounded-full p-2 text-gray-400 hover:text-red-600 hover:bg-red-50"
                       aria-label="删除作业"
                     >
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
